@@ -98,6 +98,9 @@ class CEOSDBSpider(scrapy.Spider):
                 self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
             self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
             self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
+            yield Mission(id = mission_id, name = mission_name, full_name = mission_fullname, agency_id = agency_id,
+                          status = status, launch_date = launch_date, eol_date = eol_date, applications = applications,
+                          orbit_details = orbit_details)
 
     def prepare_instruments(self, response):
         sel = scrapy.Selector(response)
