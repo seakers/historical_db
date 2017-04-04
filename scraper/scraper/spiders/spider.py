@@ -1,10 +1,14 @@
-import re
-import scrapy
 import datetime
+import re
+
 import dateparser
-import CEOSDB_schema
-from rdflib import Graph, Literal, BNode, Namespace, RDF, RDFS, URIRef
+import scrapy
+from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
+
+from scraper.spiders import CEOSDB_schema
+from scraper.items import Agency, Mission, Instrument
+
 
 class CEOSDBSpider(scrapy.Spider):
     name = "ceosdb_spider"
@@ -44,6 +48,7 @@ class CEOSDBSpider(scrapy.Spider):
             self.g.add((sa, RDF.type, CEOSDB_schema.agencyClass))
             self.g.add((sa, CEOSDB_schema.isFromCountry, Literal(country)))
             self.g.add((sa, FOAF.homepage, URIRef(website)))
+            yield Agency(id = agency_id, name = agency, country = country, website = website)
 
     def prepare_missions(self, response):
         sel = scrapy.Selector(response)
