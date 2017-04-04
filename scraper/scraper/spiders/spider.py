@@ -11,7 +11,7 @@ from scraper.items import Agency, Mission, Instrument
 
 
 class CEOSDBSpider(scrapy.Spider):
-    name = "ceosdb_spider"
+    name = "ceosdb_scraper"
     g = Graph()
 
     def start_requests(self):
