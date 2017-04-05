@@ -84,7 +84,7 @@ class CEOSDBSpider(scrapy.Spider):
             # TODO: Instruments!!!!
             orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip() # TODO: Save more detailed orbits!
             # TODO: Save measurements of mission (and which instrument does each measurement?)
-            # print(mission_name, mission_id, mission_fullname, agency_id, status, launch_date, eol_date, applications, orbit_details)
+            print(mission_name, mission_id, mission_fullname, agency_id, status, launch_date, eol_date, applications, orbit_details)
             mission = URIRef("http://ceosdb/mission#" + mission_id)
             self.g.add((mission, RDFS.label, Literal(mission_name)))
             self.g.add((mission, RDF.type, CEOSDB_schema.missionClass))
@@ -118,14 +118,14 @@ class CEOSDBSpider(scrapy.Spider):
         TR_SELECTOR = '//table[@id="gvInstrumentTable"]/tr'
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
         for row in response.xpath(TR_SELECTOR)[1:]:
-            instrument_name = row.xpath('td[1]/font/b/a/text()').extract_first().strip()
-            instrument_id = row.xpath("td[1]/font/b/a/@href").extract_first().strip().split('=', 1)[-1]
-            instrument_fullname = row.xpath("td[1]/font/text()").extract_first()
-            agency_id = row.css("td:nth-child(2) a ::attr(href)").extract_first()
+            instrument_name = row.xpath('td[1]/b/a/text()').extract_first().strip()
+            instrument_id = row.xpath('td[1]/b/a/@href').extract_first().strip().split('=', 1)[-1]
+            instrument_fullname = row.xpath('td[1]/text()').extract_first()
+            agency_id = row.xpath('td[2]/a/@href').extract_first()
             if agency_id is not None:
                 agency_id = agency_id.strip().split('=', 1)[-1]
             else:
-                agency_id = row.css("td:nth-child(2) ::text").extract_first()
+                agency_id = row.xpath('td[2]/text()').extract_first()
             # status = row.css("td:nth-child(3) ::text").extract_first().strip()
             # launch_date = row.css("td:nth-child(4) ::text").extract_first()
             # if launch_date is not None:
@@ -136,15 +136,16 @@ class CEOSDBSpider(scrapy.Spider):
             # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
             # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()  # TODO: Save more detailed orbits!
             print(instrument_name, instrument_id, instrument_fullname, agency_id)
-            mission = URIRef("http://ceosdb/instrument#" + instrument_id)
+            mission = URIRef('http://ceosdb/instrument#' + instrument_id)
             self.g.add((mission, RDFS.label, Literal(instrument_name)))
             self.g.add((mission, RDF.type, CEOSDB_schema.instrumentClass))
             if instrument_fullname is not None:
                 self.g.add((mission, CEOSDB_schema.hasFullName, Literal(instrument_fullname)))
-            if agency_id.isdigit():
-                self.g.add((mission, CEOSDB_schema.builtBy, URIRef("http://ceosdb/agency#" + agency_id)))
-            else:
-                self.g.add((mission, CEOSDB_schema.builtBy, Literal(agency_id)))
+            if agency_id is not None:
+                if agency_id.isdigit():
+                    self.g.add((mission, CEOSDB_schema.builtBy, URIRef('http://ceosdb/agency#' + agency_id)))
+                else:
+                    self.g.add((mission, CEOSDB_schema.builtBy, Literal(agency_id)))
             # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
             # if launch_date is not None:
             #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
