@@ -30,7 +30,7 @@ class Agency(DeclarativeBase):
     country = Column('country', String)
     website = Column('website', String)
 
-    missions = relationship("Mission")
+    missions = relationship("Mission", back_populates='agency', cascade="all, delete-orphan")
 
 
 class Mission(DeclarativeBase):
@@ -46,3 +46,5 @@ class Mission(DeclarativeBase):
     eol_date = Column('eol_date', DateTime, nullable=True)
     applications = Column('applications', String)
     orbit_details = Column('orbit_details', String)
+
+    agency = relationship("Agency", back_populates="missions")

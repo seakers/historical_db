@@ -64,7 +64,7 @@ class CEOSDBSpider(scrapy.Spider):
     def parse_missions(self, response):
         TR_SELECTOR = "#gvMissionTable > tr"
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
-        for row in response.css(TR_SELECTOR)[1:-1]:
+        for row in response.css(TR_SELECTOR)[1:]:
             mission_name = row.css("td:nth-child(1) b a ::text").extract_first().strip()
             mission_id = row.css("td:nth-child(1) b a ::attr(href)").extract_first().strip().split('=', 1)[-1]
             mission_fullname = row.css("td:nth-child(1) ::text").extract()
@@ -84,7 +84,7 @@ class CEOSDBSpider(scrapy.Spider):
             # TODO: Instruments!!!!
             orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip() # TODO: Save more detailed orbits!
             # TODO: Save measurements of mission (and which instrument does each measurement?)
-            print(mission_name, mission_id, mission_fullname, agency_id, status, launch_date, eol_date, applications, orbit_details)
+            # print(mission_name, mission_id, mission_fullname, agency_id, status, launch_date, eol_date, applications, orbit_details)
             mission = URIRef("http://ceosdb/mission#" + mission_id)
             self.g.add((mission, RDFS.label, Literal(mission_name)))
             self.g.add((mission, RDF.type, CEOSDB_schema.missionClass))
@@ -115,16 +115,12 @@ class CEOSDBSpider(scrapy.Spider):
         yield scrapy.FormRequest('http://database.eohandbook.com/database/instrumenttable.aspx', formdata = data, callback = self.parse_instruments)
 
     def parse_instruments(self, response):
-        TR_SELECTOR = "#gvInstrumentTable > tr"
+        TR_SELECTOR = '//table[@id="gvInstrumentTable"]/tr'
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
-        for row in response.css(TR_SELECTOR)[1:-1]:
-            instrument_name = row.css("td:nth-child(1) b a ::text").extract_first().strip()
-            instrument_id = row.css("td:nth-child(1) b a ::attr(href)").extract_first().strip().split('=', 1)[-1]
-            instrument_fullname = row.css("td:nth-child(1) ::text").extract()
-            if len(instrument_fullname) > 1:
-                instrument_fullname = instrument_fullname[1].strip()
-            else:
-                instrument_fullname = None
+        for row in response.xpath(TR_SELECTOR)[1:]:
+            instrument_name = row.xpath('td[1]/font/b/a/text()').extract_first().strip()
+            instrument_id = row.xpath("td[1]/font/b/a/@href").extract_first().strip().split('=', 1)[-1]
+            instrument_fullname = row.xpath("td[1]/font/text()").extract_first()
             agency_id = row.css("td:nth-child(2) a ::attr(href)").extract_first()
             if agency_id is not None:
                 agency_id = agency_id.strip().split('=', 1)[-1]
