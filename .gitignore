@@ -91,3 +91,6 @@ ENV/
 # IntelliJ
 .idea/workspace.xml
 .idea/tasks.xml
+
+# ML
+ml/data
