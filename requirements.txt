@@ -29,7 +29,7 @@ ruamel.yaml==0.14.2
 Scrapy==1.3.3
 service-identity==16.0.0
 six==1.10.0
-SQLAlchemy==1.1.8
+SQLAlchemy==1.1.9
 Twisted==17.1.0
 tzlocal==1.3
 w3lib==1.17.0
