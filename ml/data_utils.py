@@ -46,7 +46,7 @@ def construct_vocab(data, utility, add_word=False):
                 if (isinstance(word, numbers.Number)):
                     number_found += 1
                 else:
-                    if (not (utility.word_ids.has_key(word))):
+                    if word not in utility.word_ids:
                         utility.words.append(word)
                         utility.word_count[word] = 1
                         utility.word_ids[word] = len(utility.word_ids)
@@ -58,7 +58,7 @@ def construct_vocab(data, utility, add_word=False):
                     if (isinstance(word, numbers.Number)):
                         number_found += 1
                     else:
-                        if (not (utility.word_ids.has_key(word))):
+                        if word not in utility.word_ids:
                             utility.words.append(word)
                             utility.word_count[word] = 1
                             utility.word_ids[word] = len(utility.word_ids)
@@ -70,7 +70,7 @@ def construct_vocab(data, utility, add_word=False):
                     if (isinstance(word, numbers.Number)):
                         number_found += 1
                     else:
-                        if (not (utility.word_ids.has_key(word))):
+                        if word not in utility.word_ids:
                             utility.words.append(word)
                             utility.word_count[word] = 1
                             utility.word_ids[word] = len(utility.word_ids)
@@ -80,7 +80,7 @@ def construct_vocab(data, utility, add_word=False):
 
 
 def word_lookup(word, utility):
-    if (utility.word_ids.has_key(word)):
+    if word in utility.word_ids:
         return word
     else:
         return utility.unk_token
@@ -190,8 +190,8 @@ def exact_column_match(question, table, number):
     for i in range(len(table)):
         table_entry = table[i]
         for k in range(len(question)):
-            if (k + len(table_entry) <= len(question)):
-                if (table_entry == question[k:(k + len(table_entry))]):
+            if k + len(table_entry) <= len(question):
+                if table_entry == question[k:(k + len(table_entry))]:
                     answer[i] = 1.0
                     matched_indices.append((k, len(table_entry)))
     return answer, matched_indices
@@ -200,14 +200,14 @@ def exact_column_match(question, table, number):
 def get_max_entry(a):
     e = {}
     for w in a:
-        if (w != "UNK, "):
-            if (e.has_key(w)):
+        if w != "UNK, ":
+            if w in e:
                 e[w] += 1
             else:
                 e[w] = 1
-    if (len(e) > 0):
+    if len(e) > 0:
         (key, val) = sorted(e.items(), key=lambda x: -1 * x[1])[0]
-        if (val > 1):
+        if val > 1:
             return key
         else:
             return -1.0
@@ -558,11 +558,13 @@ def add_special_words(utility):
 
 def perform_word_cutoff(utility):
     if (utility.FLAGS.word_cutoff > 0):
-        for word in utility.word_ids.keys():
-            if (utility.word_count.has_key(word) and utility.word_count[word] <
-                utility.FLAGS.word_cutoff and word != utility.unk_token and
-                        word != utility.dummy_token and word != utility.entry_match_token and
-                        word != utility.column_match_token):
+        for word in list(utility.word_ids.keys()):
+            if word in utility.word_count and \
+                utility.word_count[word] < utility.FLAGS.word_cutoff and \
+                word != utility.unk_token and \
+                word != utility.dummy_token and \
+                word != utility.entry_match_token and \
+                word != utility.column_match_token:
                 utility.word_ids.pop(word)
                 utility.words.remove(word)
 

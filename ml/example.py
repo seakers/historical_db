@@ -2,6 +2,9 @@ import tensorflow as tf
 # NumPy is often used to load, manipulate and preprocess data.
 import numpy as np
 
+config = tf.contrib.learn.RunConfig()
+config.gpu_memory_fraction = 0.9
+
 # Declare list of features. We only have one real-valued feature. There are many
 # other types of columns that are more complicated and useful.
 features = [tf.contrib.layers.real_valued_column("x", dimension=1)]
@@ -11,7 +14,7 @@ features = [tf.contrib.layers.real_valued_column("x", dimension=1)]
 # logistic regression, linear classification, logistic classification, and
 # many neural network classifiers and regressors. The following code
 # provides an estimator that does linear regression.
-estimator = tf.contrib.learn.LinearRegressor(feature_columns=features)
+estimator = tf.contrib.learn.LinearRegressor(feature_columns=features, config=config)
 
 # TensorFlow provides many helper methods to read and set up data sets.
 # Here we use `numpy_input_fn`. We have to tell the function how many batches

@@ -1,22 +1,19 @@
+# -*- coding: utf-8 -*-
+
 import datetime
 import re
 
 import dateparser
 import scrapy
-from rdflib import Graph, Literal, RDF, RDFS, URIRef
-from rdflib.namespace import FOAF, OWL
 
-from scraper.spiders import CEOSDB_schema
 from scraper.items import Agency, Mission, Instrument
 
 
 class CEOSDBSpider(scrapy.Spider):
     name = "ceosdb_scraper"
-    g = Graph()
 
     def start_requests(self):
         # Define subclasses
-        self.define_subclasses()
         yield scrapy.Request(url='http://database.eohandbook.com/database/agencytable.aspx', callback=self.parse_agencies)
         yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx', callback=self.prepare_missions)
         yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx', callback=self.prepare_instruments)
@@ -34,20 +31,15 @@ class CEOSDBSpider(scrapy.Spider):
         # More can be added if needed
 
     def parse_agencies(self, response):
-        TR_SELECTOR = "#dgAgencies > tr"
-        for row in response.css(TR_SELECTOR)[1:]:
-            agency = row.css("td:nth-child(1) b a ::text").extract_first().strip()
-            agency_id = row.css("td:nth-child(1) b a ::attr(href)").extract_first().strip().split('=', 1)[-1]
-            country = row.css("td:nth-child(2) ::text").extract_first().strip()
-            website = row.css("td:nth-child(3) a ::attr(href)").extract_first().strip()
-            num_missions = row.css("td:nth-child(4) ::text").extract_first().strip()
-            num_missions = re.match(r"\d*", num_missions).group(0)
-            num_instruments = row.css("td:nth-child(5) ::text").extract_first().strip().replace("-", "")
-            sa = URIRef("http://ceosdb/agency#" + agency_id)
-            self.g.add((sa, RDFS.label, Literal(agency)))
-            self.g.add((sa, RDF.type, CEOSDB_schema.agencyClass))
-            self.g.add((sa, CEOSDB_schema.isFromCountry, Literal(country)))
-            self.g.add((sa, FOAF.homepage, URIRef(website)))
+        TR_SELECTOR = '//*[@id="dgAgencies"]/tr'
+        for row in response.xpath(TR_SELECTOR)[1:]:
+            agency = row.xpath('td[1]/b/a/text()').extract_first().strip()
+            agency_id = row.xpath('td[1]/b/a/@href').extract_first().strip().split('=', 1)[-1]
+            country = row.xpath('td[2]/text()').extract_first().strip()
+            website = row.xpath('td[3]/a/@href').extract_first().strip()
+            num_missions = row.xpath('td[4]/text()').extract_first().strip()
+            num_missions = re.match(r'\d*', num_missions).group(0)
+            num_instruments = row.xpath('td[5]/text()').extract_first().strip().replace('-', '')
             yield Agency(id = agency_id, name = agency, country = country, website = website)
 
     def prepare_missions(self, response):
@@ -62,45 +54,59 @@ class CEOSDBSpider(scrapy.Spider):
         yield scrapy.FormRequest('http://database.eohandbook.com/database/missiontable.aspx', formdata = data, callback = self.parse_missions)
 
     def parse_missions(self, response):
-        TR_SELECTOR = "#gvMissionTable > tr"
+        TR_SELECTOR = '//*[@id="gvMissionTable"]/tr'
+        for row in response.xpath(TR_SELECTOR)[1:]:
+            url = row.xpath('td[1]/b/a/@href').extract_first().strip()
+            yield scrapy.Request(url=response.urljoin(url), callback=self.parse_mission)
+
+    def parse_mission(self, response):
+        # Settings for date parsing
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
-        for row in response.css(TR_SELECTOR)[1:]:
-            mission_name = row.css("td:nth-child(1) b a ::text").extract_first().strip()
-            mission_id = row.css("td:nth-child(1) b a ::attr(href)").extract_first().strip().split('=', 1)[-1]
-            mission_fullname = row.css("td:nth-child(1) ::text").extract()
-            if len(mission_fullname) > 1:
-                mission_fullname = mission_fullname[1].strip()
-            else:
-                mission_fullname = None
-            agency_id = row.css("td:nth-child(2) a ::attr(href)").extract_first().strip().split('=', 1)[-1]
-            status = row.css("td:nth-child(3) ::text").extract_first().strip()
-            launch_date = row.css("td:nth-child(4) ::text").extract_first()
-            if launch_date is not None:
-                launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
-            eol_date = row.css("td:nth-child(5) ::text").extract_first()
-            if eol_date is not None:
-                eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
-            applications = row.css("td:nth-child(6) ::text").extract_first().strip()
-            # TODO: Instruments!!!!
-            orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip() # TODO: Save more detailed orbits!
-            # TODO: Save measurements of mission (and which instrument does each measurement?)
-            print(mission_name, mission_id, mission_fullname, agency_id, status, launch_date, eol_date, applications, orbit_details)
-            mission = URIRef("http://ceosdb/mission#" + mission_id)
-            self.g.add((mission, RDFS.label, Literal(mission_name)))
-            self.g.add((mission, RDF.type, CEOSDB_schema.missionClass))
-            if mission_fullname is not None:
-                self.g.add((mission, CEOSDB_schema.hasFullName, Literal(mission_fullname)))
-            self.g.add((mission, CEOSDB_schema.builtBy, URIRef("http://ceosdb/agency#" + agency_id)))
-            self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
-            if launch_date is not None:
-                self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
-            if eol_date is not None:
-                self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
-            self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
-            self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
-            yield Mission(id = mission_id, name = mission_name, full_name = mission_fullname, agency_id = agency_id,
-                          status = status, launch_date = launch_date, eol_date = eol_date, applications = applications,
-                          orbit_details = orbit_details)
+
+        # Basic mission information
+        mission_name = response.xpath('//*[@id="lblMissionNameShort"]/text()').extract_first().strip()[2:]
+        mission_id = response.url.split('=', 1)[-1]
+        mission_fullname = response.xpath('//*[@id="lblMissionNameFull"]/text()').extract_first(default='').strip()
+        if not mission_fullname:
+            mission_fullname = None
+        agency_ids = []
+        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract():
+            agency_id = int(agency_link.strip().split('=', 1)[-1])
+            if agency_id not in agency_ids:
+                agency_ids.append(agency_id)
+        status = response.xpath('//*[@id="lblMissionStatus"]/text()').extract_first().strip()
+        launch_date = response.xpath('//*[@id="lblLaunchDate"]/text()').extract_first()
+        if launch_date:
+            launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
+        eol_date = response.xpath('//*[@id="lblEOLDate"]/text()').extract_first()
+        if eol_date:
+            eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
+        applications = response.xpath('//*[@id="lblMissionObjectivesAndApplications"]/text()').extract_first().strip()
+
+        # Orbit details (if existing)
+        orbit_type = response.xpath('//*[@id="lblOrbitType"]/text()').extract_first(default='').strip()
+        orbit_period = response.xpath('//*[@id="lblOrbitPeriod"]/text()').extract_first(default='').strip()
+        orbit_sense = response.xpath('//*[@id="lblOrbitSense"]/text()').extract_first(default='').strip()
+        orbit_inclination = response.xpath('//*[@id="lblOrbitInclination"]/text()').extract_first(default='').strip()
+        orbit_altitude = response.xpath('//*[@id="lblOrbitAltitude"]/text()').extract_first(default='').strip()
+        orbit_longitude = response.xpath('//*[@id="lblOrbitLongitude"]/text()').extract_first(default='').strip()
+        orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
+        repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
+
+        # TODO: Instruments!!!!
+        # TODO: Save measurements of mission (and which instrument does each measurement?)
+
+        # Debug information
+        print(mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
+              orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_altitude, orbit_longitude, orbit_LST,
+              repeat_cycle)
+
+        # Send mission information to pipelines
+        yield Mission(id=mission_id, name=mission_name, full_name=mission_fullname, agencies=agency_ids,
+                      status=status, launch_date=launch_date, eol_date=eol_date, applications=applications,
+                      orbit_type=orbit_type, orbit_period=orbit_period, orbit_sense=orbit_sense,
+                      orbit_inclination=orbit_inclination, orbit_altitude=orbit_altitude,
+                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, repeat_cycle=repeat_cycle)
 
     def prepare_instruments(self, response):
         sel = scrapy.Selector(response)
@@ -134,18 +140,8 @@ class CEOSDBSpider(scrapy.Spider):
             # if eol_date is not None:
             #     eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
             # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
-            # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()  # TODO: Save more detailed orbits!
+            # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()
             print(instrument_name, instrument_id, instrument_fullname, agency_id)
-            mission = URIRef('http://ceosdb/instrument#' + instrument_id)
-            self.g.add((mission, RDFS.label, Literal(instrument_name)))
-            self.g.add((mission, RDF.type, CEOSDB_schema.instrumentClass))
-            if instrument_fullname is not None:
-                self.g.add((mission, CEOSDB_schema.hasFullName, Literal(instrument_fullname)))
-            if agency_id is not None:
-                if agency_id.isdigit():
-                    self.g.add((mission, CEOSDB_schema.builtBy, URIRef('http://ceosdb/agency#' + agency_id)))
-                else:
-                    self.g.add((mission, CEOSDB_schema.builtBy, Literal(agency_id)))
             # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
             # if launch_date is not None:
             #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
@@ -153,14 +149,5 @@ class CEOSDBSpider(scrapy.Spider):
             #     self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
             # self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
             # self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
-
-    def define_subclasses(self):
-        self.g.add((CEOSDB_schema.agencyClass, RDFS.subClassOf, OWL.Thing))
-        self.g.add((CEOSDB_schema.missionClass, RDFS.subClassOf, OWL.Thing))
-        self.g.add((CEOSDB_schema.instrumentClass, RDFS.subClassOf, OWL.Thing))
-        self.g.add((CEOSDB_schema.measurementCategoryClass, RDFS.subClassOf, OWL.Thing))
-        self.g.add((CEOSDB_schema.measurementClass, RDFS.subClassOf, OWL.Thing))
-
-    def closed(self, reason):
-        with open('ontology.n3', 'wb') as ont_file:
-            ont_file.write(self.g.serialize(format='n3'))
+            yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
+                             agency_id=agency_id)

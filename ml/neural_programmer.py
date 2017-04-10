@@ -152,7 +152,7 @@ def master(train_data, dev_data, utility):
     # creates TF graph and calls trainer or evaluator
     batch_size = utility.FLAGS.batch_size
     model_dir = utility.FLAGS.output_dir + "/model" + utility.FLAGS.job_id + "/"
-    # create all paramters of the model
+    # create all parameters of the model
     param_class = parameters.Parameters(utility)
     params, global_step, init = param_class.parameters(utility)
     key = "test" if (FLAGS.evaluator_job) else "train"

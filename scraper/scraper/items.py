@@ -15,17 +15,26 @@ class Agency(Item):
     country = Field()
     website = Field()
 
+
 class Mission(Item):
     """Defines an EO mission"""
     id = Field()
     name = Field()
     full_name = Field()
-    agency_id = Field()
+    agencies = Field()
     status = Field()
     launch_date = Field()
     eol_date = Field()
     applications = Field()
-    orbit_details = Field()
+    orbit_type = Field()
+    orbit_period = Field()
+    orbit_sense = Field()
+    orbit_inclination = Field()
+    orbit_altitude = Field()
+    orbit_longitude = Field()
+    orbit_LST = Field()
+    repeat_cycle = Field()
+
 
 class Instrument(Item):
     """Defines an EO Instrument"""
