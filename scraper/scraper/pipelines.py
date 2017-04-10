@@ -27,9 +27,12 @@ class DatabasePipeline(object):
         session = self.Session()
 
         try:
-            session.query(Instrument).delete()
-            session.query(Mission).delete()
-            session.query(Agency).delete()
+            for instrument in session.query(Instrument).all():
+                session.delete(instrument)
+            for mission in session.query(Mission).all():
+                session.delete(mission)
+            for agency in session.query(Agency):
+                session.delete(agency)
             session.commit()
         except:
             session.rollback()

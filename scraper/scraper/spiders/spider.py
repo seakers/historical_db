@@ -70,7 +70,7 @@ class CEOSDBSpider(scrapy.Spider):
         if not mission_fullname:
             mission_fullname = None
         agency_ids = []
-        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract():
+        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract()[:-1]:
             agency_id = int(agency_link.strip().split('=', 1)[-1])
             if agency_id not in agency_ids:
                 agency_ids.append(agency_id)
