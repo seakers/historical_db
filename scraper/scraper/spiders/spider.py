@@ -13,8 +13,9 @@ class CEOSDBSpider(scrapy.Spider):
     name = "ceosdb_scraper"
 
     def start_requests(self):
-        # Define subclasses
-        yield scrapy.Request(url='http://database.eohandbook.com/database/agencytable.aspx', callback=self.parse_agencies)
+        # For agencies, do brute force requests as there is not a comprehensive list of them
+        for i in range(1,202):
+            yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i), callback=self.parse_agency)
         yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx', callback=self.prepare_missions)
         yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx', callback=self.prepare_instruments)
 
@@ -23,23 +24,19 @@ class CEOSDBSpider(scrapy.Spider):
         title = response.css(TITLE_SELECTOR).extract_first().strip()
 
         if "AGENCY" in title:
-            return self.parse_agencies(response)
+            return self.parse_agency(response)
         elif "MISSIONS" in title:
             return self.parse_missions(response)
         elif "INSTRUMENTS" in title:
             return self.parse_instruments(response)
         # More can be added if needed
 
-    def parse_agencies(self, response):
-        TR_SELECTOR = '//*[@id="dgAgencies"]/tr'
-        for row in response.xpath(TR_SELECTOR)[1:]:
-            agency = row.xpath('td[1]/b/a/text()').extract_first().strip()
-            agency_id = row.xpath('td[1]/b/a/@href').extract_first().strip().split('=', 1)[-1]
-            country = row.xpath('td[2]/text()').extract_first().strip()
-            website = row.xpath('td[3]/a/@href').extract_first().strip()
-            num_missions = row.xpath('td[4]/text()').extract_first().strip()
-            num_missions = re.match(r'\d*', num_missions).group(0)
-            num_instruments = row.xpath('td[5]/text()').extract_first().strip().replace('-', '')
+    def parse_agency(self, response):
+        agency = response.xpath('//*[@id="lblAgencyNameAbbr"]/text()').extract_first(default='').strip()[2:]
+        agency_id = response.url.split('=', 1)[-1]
+        country = response.xpath('//*[@id="lblAgencyCountry"]/text()').extract_first(default='').strip()
+        website = response.xpath('//*[@id="lblAgencyURL"]/a/@href').extract_first(default='').strip()
+        if agency:
             yield Agency(id = agency_id, name = agency, country = country, website = website)
 
     def prepare_missions(self, response):
@@ -81,7 +78,7 @@ class CEOSDBSpider(scrapy.Spider):
         eol_date = response.xpath('//*[@id="lblEOLDate"]/text()').extract_first()
         if eol_date:
             eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
-        applications = response.xpath('//*[@id="lblMissionObjectivesAndApplications"]/text()').extract_first().strip()
+        applications = response.xpath('//*[@id="lblMissionObjectivesAndApplications"]/text()').extract_first(default='').strip()
 
         # Orbit details (if existing)
         orbit_type = response.xpath('//*[@id="lblOrbitType"]/text()').extract_first(default='').strip()
