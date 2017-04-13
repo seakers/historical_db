@@ -15,9 +15,9 @@ class CEOSDBSpider(scrapy.Spider):
     def start_requests(self):
         # For agencies, do brute force requests as there is not a comprehensive list of them
         for i in range(1,202):
-            yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i), callback=self.parse_agency)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx', callback=self.prepare_missions)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx', callback=self.prepare_instruments)
+            yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i), callback=self.parse_agency, priority=20)
+        yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx', callback=self.prepare_missions, priority=15)
+        yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx', callback=self.prepare_instruments,priority=10)
 
     def parse(self, response):
         TITLE_SELECTOR = 'title ::text'
@@ -54,7 +54,7 @@ class CEOSDBSpider(scrapy.Spider):
         TR_SELECTOR = '//*[@id="gvMissionTable"]/tr'
         for row in response.xpath(TR_SELECTOR)[1:]:
             url = row.xpath('td[1]/b/a/@href').extract_first().strip()
-            yield scrapy.Request(url=response.urljoin(url), callback=self.parse_mission)
+            yield scrapy.Request(url=response.urljoin(url), callback=self.parse_mission, priority=14)
 
     def parse_mission(self, response):
         # Settings for date parsing
@@ -67,7 +67,7 @@ class CEOSDBSpider(scrapy.Spider):
         if not mission_fullname:
             mission_fullname = None
         agency_ids = []
-        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract()[:-1]:
+        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract():
             agency_id = int(agency_link.strip().split('=', 1)[-1])
             if agency_id not in agency_ids:
                 agency_ids.append(agency_id)
@@ -94,7 +94,7 @@ class CEOSDBSpider(scrapy.Spider):
         # TODO: Save measurements of mission (and which instrument does each measurement?)
 
         # Debug information
-        print(mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
+        print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
               orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_altitude, orbit_longitude, orbit_LST,
               repeat_cycle)
 
@@ -119,32 +119,39 @@ class CEOSDBSpider(scrapy.Spider):
 
     def parse_instruments(self, response):
         TR_SELECTOR = '//table[@id="gvInstrumentTable"]/tr'
-        date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
         for row in response.xpath(TR_SELECTOR)[1:]:
-            instrument_name = row.xpath('td[1]/b/a/text()').extract_first().strip()
-            instrument_id = row.xpath('td[1]/b/a/@href').extract_first().strip().split('=', 1)[-1]
-            instrument_fullname = row.xpath('td[1]/text()').extract_first()
-            agency_id = row.xpath('td[2]/a/@href').extract_first()
-            if agency_id is not None:
-                agency_id = agency_id.strip().split('=', 1)[-1]
-            else:
-                agency_id = row.xpath('td[2]/text()').extract_first()
-            # status = row.css("td:nth-child(3) ::text").extract_first().strip()
-            # launch_date = row.css("td:nth-child(4) ::text").extract_first()
-            # if launch_date is not None:
-            #     launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
-            # eol_date = row.css("td:nth-child(5) ::text").extract_first()
-            # if eol_date is not None:
-            #     eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
-            # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
-            # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()
-            print(instrument_name, instrument_id, instrument_fullname, agency_id)
-            # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
-            # if launch_date is not None:
-            #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
-            # if eol_date is not None:
-            #     self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
-            # self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
-            # self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
-            yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
-                             agency_id=agency_id)
+            url = row.xpath('td[1]/b/a/@href').extract_first().strip()
+            yield scrapy.Request(url=response.urljoin(url), callback=self.parse_instrument, priority=9)
+
+    def parse_instrument(selfself, response):
+        instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
+        instrument_id = response.url.split('=', 1)[-1]
+        instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
+        if not instrument_fullname:
+            instrument_fullname = None
+        status = response.xpath('//*[@id="lblInstrumentStatus"]').extract_first().strip()
+        agency_ids = []
+        for agency_link in response.xpath('//*[@id="lblInstrumentAgencies"]/a/@href').extract()[:-1]:
+            agency_id = int(agency_link.strip().split('=', 1)[-1])
+            if agency_id not in agency_ids:
+                agency_ids.append(agency_id)
+        maturity = response.xpath('//*[@id="lblInstrumentMaturity"]').extract_first(default='').strip()
+        # status = row.css("td:nth-child(3) ::text").extract_first().strip()
+        # launch_date = row.css("td:nth-child(4) ::text").extract_first()
+        # if launch_date is not None:
+        #     launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
+        # eol_date = row.css("td:nth-child(5) ::text").extract_first()
+        # if eol_date is not None:
+        #     eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
+        # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
+        # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()
+        print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids)
+        # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
+        # if launch_date is not None:
+        #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
+        # if eol_date is not None:
+        #     self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
+        # self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
+        # self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
+        yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
+                         agencies=agency_ids)

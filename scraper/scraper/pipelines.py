@@ -61,7 +61,10 @@ class DatabasePipeline(object):
                 agency = session.query(Agency).get(agency_id)
                 object.agencies.append(agency)
         elif isinstance(item, items.Instrument):
-            object = Instrument(**item)
+            object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'])
+            for agency_id in item['agencies']:
+                agency = session.query(Agency).get(agency_id)
+                object.agencies.append(agency)
         else:
             object = None
 
@@ -141,11 +144,8 @@ class OntologyPipeline(object):
             self.g.add((instrument, RDF.type, CEOSDB_schema.instrumentClass))
             if item['full_name'] is not None:
                 self.g.add((instrument, CEOSDB_schema.hasFullName, Literal(item['full_name'])))
-            if item['agency_id'] is not None:
-                if item['agency_id'].isdigit():
-                    self.g.add((instrument, CEOSDB_schema.builtBy, URIRef('http://ceosdb/agency#' + item['agency_id'])))
-                else:
-                    self.g.add((instrument, CEOSDB_schema.builtBy, Literal(item['agency_id'])))
+            for agency_id in item['agencies']:
+                self.g.add((instrument, CEOSDB_schema.builtBy, URIRef("http://ceosdb/agency#" + str(agency_id))))
 
         return item
 

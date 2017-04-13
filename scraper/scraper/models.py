@@ -23,24 +23,30 @@ def create_tables(engine):
     DeclarativeBase.metadata.create_all(engine)
 
 operators_table = Table('operators', DeclarativeBase.metadata,
-    Column('agency_id', Integer, ForeignKey('agencies.id')),
-    Column('mission_id', Integer, ForeignKey('missions.id')))
+                        Column('agency_id', Integer, ForeignKey('agencies.id')),
+                        Column('mission_id', Integer, ForeignKey('missions.id')))
+
+designers_table = Table('designers', DeclarativeBase.metadata,
+                        Column('agency_id', Integer, ForeignKey('agencies.id')),
+                        Column('instrument_id', Integer, ForeignKey('instruments.id')))
+
 
 class Agency(DeclarativeBase):
     """Sqlalchemy agencies model"""
-    __tablename__ = "agencies"
+    __tablename__ = 'agencies'
 
     id = Column(Integer, primary_key=True)
     name = Column('name', String)
     country = Column('country', String)
     website = Column('website', String)
 
-    missions = relationship("Mission", secondary=operators_table, back_populates="agencies")
+    missions = relationship('Mission', secondary=operators_table, back_populates='agencies')
+    instruments = relationship('Instrument', secondary=designers_table, back_populates='agencies')
 
 
 class Mission(DeclarativeBase):
     """Sqlalchemy missions model"""
-    __tablename__ = "missions"
+    __tablename__ = 'missions'
 
     id = Column(Integer, primary_key=True)
     name = Column('name', String)
@@ -58,13 +64,15 @@ class Mission(DeclarativeBase):
     orbit_LST = Column('orbit_LST', String, nullable=True)
     repeat_cycle = Column('repeat_cycle', String, nullable=True)
 
-    agencies = relationship("Agency", secondary=operators_table, back_populates="missions")
+    agencies = relationship('Agency', secondary=operators_table, back_populates='missions')
+
 
 class Instrument(DeclarativeBase):
     """Sqlalchemy instruments model"""
-    __tablename__ = "instruments"
+    __tablename__ = 'instruments'
 
     id = Column(Integer, primary_key=True)
     name = Column('name', String)
     full_name = Column('full_name', String, nullable=True)
-    agency_id = Column(Integer, ForeignKey('agencies.id'))
+
+    agencies = relationship('Agency', secondary=designers_table, back_populates='instruments')

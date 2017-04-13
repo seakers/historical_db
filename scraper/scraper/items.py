@@ -41,4 +41,4 @@ class Instrument(Item):
     id = Field()
     name = Field()
     full_name = Field()
-    agency_id = Field()
+    agencies = Field()
