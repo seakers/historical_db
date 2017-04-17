@@ -7,10 +7,11 @@
 
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
-from scraper.models import Agency, Mission, Instrument, db_connect, create_tables
+from scraper.models import Agency, Mission, InstrumentType, GeometryType, Instrument, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
+
 
 class DatabasePipeline(object):
     """Database pipeline for storing scraped items in the database"""
@@ -23,6 +24,16 @@ class DatabasePipeline(object):
         create_tables(engine)
         self.Session = sessionmaker(bind=engine)
 
+    def fill_instrument_types(self, session, types):
+        for instr_type in types:
+            instrument_type = InstrumentType(name=instr_type)
+            session.add(instrument_type)
+
+    def fill_geometry_types(self, session, geometries):
+        for geometry in geometries:
+            geometry_type = GeometryType(name=geometry)
+            session.add(geometry_type)
+
     def open_spider(self, spider):
         session = self.Session()
 
@@ -33,6 +44,12 @@ class DatabasePipeline(object):
                 session.delete(mission)
             for agency in session.query(Agency):
                 session.delete(agency)
+            for instrument_type in session.query(InstrumentType):
+                session.delete(instrument_type)
+            for geometry_type in session.query(GeometryType):
+                session.delete(geometry_type)
+            self.fill_instrument_types(session, spider.instrument_types)
+            self.fill_geometry_types(session, spider.instrument_geometries)
             session.commit()
         except:
             session.rollback()
@@ -49,27 +66,35 @@ class DatabasePipeline(object):
         session = self.Session()
 
         if isinstance(item, items.Agency):
-            object = Agency(**item)
+            db_object = Agency(**item)
         elif isinstance(item, items.Mission):
-            object = Mission(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
-                             launch_date=item['launch_date'], eol_date=item['eol_date'], applications=item['applications'],
-                             orbit_type=item['orbit_type'], orbit_period=item['orbit_period'], orbit_sense=item['orbit_sense'],
-                             orbit_inclination=item['orbit_inclination'], orbit_altitude=item['orbit_altitude'],
-                             orbit_longitude=item['orbit_longitude'], orbit_LST=item['orbit_LST'],
-                             repeat_cycle=item['repeat_cycle'])
+            db_object = Mission(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
+                                launch_date=item['launch_date'], eol_date=item['eol_date'],
+                                applications=item['applications'], orbit_type=item['orbit_type'],
+                                orbit_period=item['orbit_period'], orbit_sense=item['orbit_sense'],
+                                orbit_inclination=item['orbit_inclination'], orbit_altitude=item['orbit_altitude'],
+                                orbit_longitude=item['orbit_longitude'], orbit_LST=item['orbit_LST'],
+                                repeat_cycle=item['repeat_cycle'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
-                object.agencies.append(agency)
+                db_object.agencies.append(agency)
         elif isinstance(item, items.Instrument):
-            object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'])
+            db_object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
+                                   maturity=item['maturity'], technology=item['technology'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
-                object.agencies.append(agency)
+                db_object.agencies.append(agency)
+            for instr_type in item['types']:
+                instrument_type = session.query(InstrumentType).filter(InstrumentType.name == instr_type).first()
+                db_object.types.append(instrument_type)
+            for geometry in item['geometries']:
+                instrument_geometry = session.query(GeometryType).filter(GeometryType.name == geometry).first()
+                db_object.geometries.append(instrument_geometry)
         else:
-            object = None
+            db_object = None
 
         try:
-            session.add(object)
+            session.add(db_object)
             session.commit()
         except:
             session.rollback()
@@ -144,8 +169,13 @@ class OntologyPipeline(object):
             self.g.add((instrument, RDF.type, CEOSDB_schema.instrumentClass))
             if item['full_name'] is not None:
                 self.g.add((instrument, CEOSDB_schema.hasFullName, Literal(item['full_name'])))
-            for agency_id in item['agencies']:
-                self.g.add((instrument, CEOSDB_schema.builtBy, URIRef("http://ceosdb/agency#" + str(agency_id))))
+            self.g.add((instrument, CEOSDB_schema.hasStatus, Literal(item['status'])))
+            self.g.add((instrument, CEOSDB_schema.hasMaturity, Literal(item['maturity'])))
+            for type in item['types']:
+                self.g.add((instrument, CEOSDB_schema.isOfType, Literal(type)))
+            for geometry in item['geometries']:
+                self.g.add((instrument, CEOSDB_schema.hasGeometry, Literal(geometry)))
+            self.g.add((instrument, CEOSDB_schema.hasTechnology, Literal(item['technology'])))
 
         return item
 

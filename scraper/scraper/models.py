@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, Table
+from sqlalchemy import create_engine, Column, Integer, String, DateTime, Enum, ForeignKey, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.url import URL
@@ -29,6 +29,14 @@ operators_table = Table('operators', DeclarativeBase.metadata,
 designers_table = Table('designers', DeclarativeBase.metadata,
                         Column('agency_id', Integer, ForeignKey('agencies.id')),
                         Column('instrument_id', Integer, ForeignKey('instruments.id')))
+
+type_of_instrument_table = Table('type_of_instrument', DeclarativeBase.metadata,
+                                 Column('instrument_id', Integer, ForeignKey('instruments.id')),
+                                 Column('instrument_type_id', Integer, ForeignKey('instrument_types.id')))
+
+geometry_of_instrument_table = Table('geometry_of_instrument', DeclarativeBase.metadata,
+                                 Column('instrument_id', Integer, ForeignKey('instruments.id')),
+                                 Column('instrument_geometry_id', Integer, ForeignKey('geometry_types.id')))
 
 
 class Agency(DeclarativeBase):
@@ -67,6 +75,26 @@ class Mission(DeclarativeBase):
     agencies = relationship('Agency', secondary=operators_table, back_populates='missions')
 
 
+class InstrumentType(DeclarativeBase):
+    """Sqlalchemy instrument types model"""
+    __tablename__ = 'instrument_types'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+
+    instruments = relationship('Instrument', secondary=type_of_instrument_table, back_populates='types')
+
+
+class GeometryType(DeclarativeBase):
+    """Sqlalchemy geometry types model"""
+    __tablename__ = 'geometry_types'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+
+    instruments = relationship('Instrument', secondary=geometry_of_instrument_table, back_populates='geometries')
+
+
 class Instrument(DeclarativeBase):
     """Sqlalchemy instruments model"""
     __tablename__ = 'instruments'
@@ -74,5 +102,45 @@ class Instrument(DeclarativeBase):
     id = Column(Integer, primary_key=True)
     name = Column('name', String)
     full_name = Column('full_name', String, nullable=True)
+    status = Column('status', String)
+    maturity = Column('maturity', String, nullable=True)
+    technology = Column('technology', Enum('Absorption-band MW radiometer/spectrometer',
+	'Atmospheric lidar',
+	'Broad-band radiometer',
+	'Cloud and precipitation radar',
+	'Communications system',
+	'Data collection system',
+	'Doppler lidar',
+	'Electric field sensor',
+	'GNSS radio-occultation receiver',
+	'GNSS receiver',
+	'Gradiometer/accelerometer',
+	'High resolution optical imager',
+	'High-resolution nadir-scanning IR spectrometer',
+	'High-resolution nadir-scanning SW spectrometer',
+	'Imaging radar (SAR)',
+	'Laser retroreflector',
+	'Lidar altimeter',
+	'Lightning imager',
+	'Limb-scanning IR spectrometer',
+	'Limb-scanning MW spectrometer',
+	'Limb-scanning SW spectrometer',
+	'Magnetometer',
+	'Medium-resolution IR spectrometer',
+	'Medium-resolution spectro-radiometer',
+	'Multi-channel/direction/polarisation radiometer',
+	'Multi-purpose imaging MW radiometer',
+	'Multi-purpose imaging Vis/IR radiometer',
+	'Narrow-band channel IR radiometer',
+	'Non-scanning MW radiometer',
+	'Radar altimeter',
+	'Radar scatterometer',
+	'Radio-positioning system',
+	'Satellite-to-satellite ranging system',
+	'Solar irradiance monitor',
+	'Space environment monitor',
+	'Star tracker', name='technologies'), nullable=True)
 
     agencies = relationship('Agency', secondary=designers_table, back_populates='instruments')
+    types = relationship('InstrumentType', secondary=type_of_instrument_table, back_populates='instruments')
+    geometries = relationship('GeometryType', secondary=geometry_of_instrument_table, back_populates='instruments')

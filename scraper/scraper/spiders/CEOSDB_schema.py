@@ -21,3 +21,8 @@ hasOrbitAltitude = URIRef("http://ceosdb/schemas/relationship/hasOrbitAltitude")
 hasOrbitLongitude = URIRef("http://ceosdb/schemas/relationship/hasOrbitLongitude")
 hasOrbitLST = URIRef("http://ceosdb/schemas/relationship/hasOrbitLST")
 hasRepeatCycle = URIRef("http://ceosdb/schemas/relationship/hasRepeatCycle")
+
+hasMaturity = URIRef("http://ceosdb/schemas/relationship/hasMaturity")
+isOfType = URIRef("http://ceosdb/schemas/relationship/isOfType")
+hasGeometry = URIRef("http://ceosdb/schemas/relationship/hasGeometry")
+hasTechnology = URIRef("http://ceosdb/schemas/relationship/hasTechnology")

@@ -12,22 +12,64 @@ from scraper.items import Agency, Mission, Instrument
 class CEOSDBSpider(scrapy.Spider):
     name = "ceosdb_scraper"
 
+    instrument_types = ['Atmospheric chemistry',
+                        'Atmospheric temperature and humidity sounders',
+                        'Cloud profile and rain radars',
+                        'Communications',
+                        'Data collection',
+                        'Earth radiation budget radiometers',
+                        'Gravity instruments',
+                        'High resolution optical imagers',
+                        'Hyperspectral imagers',
+                        'Imaging microwave radars',
+                        'Imaging multi-spectral radiometers (passive microwave)',
+                        'Imaging multi-spectral radiometers (vis/IR)',
+                        'In situ',
+                        'Lidars',
+                        'Lightning sensors',
+                        'Magnetic field',
+                        'Multiple direction/polarisation radiometers',
+                        'Ocean colour instruments',
+                        'Other',
+                        'Precision orbit',
+                        'Radar altimeters',
+                        'Scatterometers',
+                        'Space environment',
+                        'TBD',
+                        ]
+
+    instrument_geometries = ['Conical scanning',
+                             'Cross-track scanning',
+                             'Earth disk scanning',
+                             'Limb-scanning',
+                             'Nadir-viewing',
+                             'Occultation',
+                             'Push-broom scanning',
+                             'Side-looking',
+                             'Steerable viewing',
+                             'Whisk-broom scanning',
+                             'TBD'
+                             ]
+
     def start_requests(self):
         # For agencies, do brute force requests as there is not a comprehensive list of them
-        for i in range(1,202):
-            yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i), callback=self.parse_agency, priority=20)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx', callback=self.prepare_missions, priority=15)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx', callback=self.prepare_instruments,priority=10)
+        for i in range(1, 202):
+            yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i),
+                                 callback=self.parse_agency, priority=20)
+        yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx',
+                             callback=self.prepare_missions, priority=15)
+        yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx',
+                             callback=self.prepare_instruments, priority=10)
 
     def parse(self, response):
         TITLE_SELECTOR = 'title ::text'
         title = response.css(TITLE_SELECTOR).extract_first().strip()
 
-        if "AGENCY" in title:
+        if 'AGENCY' in title:
             return self.parse_agency(response)
-        elif "MISSIONS" in title:
+        elif 'MISSIONS' in title:
             return self.parse_missions(response)
-        elif "INSTRUMENTS" in title:
+        elif 'INSTRUMENTS' in title:
             return self.parse_instruments(response)
         # More can be added if needed
 
@@ -37,7 +79,7 @@ class CEOSDBSpider(scrapy.Spider):
         country = response.xpath('//*[@id="lblAgencyCountry"]/text()').extract_first(default='').strip()
         website = response.xpath('//*[@id="lblAgencyURL"]/a/@href').extract_first(default='').strip()
         if agency:
-            yield Agency(id = agency_id, name = agency, country = country, website = website)
+            yield Agency(id=agency_id, name=agency, country=country, website=website)
 
     def prepare_missions(self, response):
         sel = scrapy.Selector(response)
@@ -46,9 +88,10 @@ class CEOSDBSpider(scrapy.Spider):
         data = {'__EVENTTARGET': '', '__EVENTARGUMENT': '', '__LASTFOCUS': '', '__VIEWSTATE': viewstate,
                 '__VIEWSTATEGENERATOR': 'ABD5AB5F', '__VIEWSTATEENCRYPTED': '', '__EVENTVALIDATION': eventvalidation,
                 'ddlAgency': 'All', 'ddlMissionStatus': 'All', 'tbMission': '', 'ddlLauchYearFilterType': 'All',
-                'tbInstruments': '', 'ddlEOLYearFilterType' : 'All', 'tbApplications': '', 'ddlDisplayResults': 'All',
+                'tbInstruments': '', 'ddlEOLYearFilterType': 'All', 'tbApplications': '', 'ddlDisplayResults': 'All',
                 'ddlRepeatCycleFilter': 'All', 'btFilter': 'Apply+Filter'}
-        yield scrapy.FormRequest('http://database.eohandbook.com/database/missiontable.aspx', formdata = data, callback = self.parse_missions)
+        yield scrapy.FormRequest('http://database.eohandbook.com/database/missiontable.aspx',
+                                 formdata=data, callback=self.parse_missions)
 
     def parse_missions(self, response):
         TR_SELECTOR = '//*[@id="gvMissionTable"]/tr'
@@ -115,7 +158,8 @@ class CEOSDBSpider(scrapy.Spider):
                 'ddlLauchYearFilterType': 'All', 'tbInstrument': '', 'ddlInstrumentType': 'All', 'tbApplications': '',
                 'ddlInstrumentTechnology': 'All', 'ddlResolutionFilter': 'All', 'ddlWaveband': 'All',
                 'ddlDataAccess': 'All', 'ddlDisplayResults': 'All', 'btFilter': 'Apply+Filter'}
-        yield scrapy.FormRequest('http://database.eohandbook.com/database/instrumenttable.aspx', formdata = data, callback = self.parse_instruments)
+        yield scrapy.FormRequest('http://database.eohandbook.com/database/instrumenttable.aspx',
+                                 formdata=data, callback=self.parse_instruments)
 
     def parse_instruments(self, response):
         TR_SELECTOR = '//table[@id="gvInstrumentTable"]/tr'
@@ -123,19 +167,36 @@ class CEOSDBSpider(scrapy.Spider):
             url = row.xpath('td[1]/b/a/@href').extract_first().strip()
             yield scrapy.Request(url=response.urljoin(url), callback=self.parse_instrument, priority=9)
 
-    def parse_instrument(selfself, response):
+    def parse_instrument(self, response):
         instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
         instrument_id = response.url.split('=', 1)[-1]
         instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
         if not instrument_fullname:
             instrument_fullname = None
-        status = response.xpath('//*[@id="lblInstrumentStatus"]').extract_first().strip()
+        status = response.xpath('//*[@id="lblInstrumentStatus"]/text()').extract_first().strip()
         agency_ids = []
         for agency_link in response.xpath('//*[@id="lblInstrumentAgencies"]/a/@href').extract()[:-1]:
             agency_id = int(agency_link.strip().split('=', 1)[-1])
             if agency_id not in agency_ids:
                 agency_ids.append(agency_id)
-        maturity = response.xpath('//*[@id="lblInstrumentMaturity"]').extract_first(default='').strip()
+        maturity = response.xpath('//*[@id="lblInstrumentMaturity"]/text()').extract_first(default='').strip()
+        types = []
+        types_texts = response.xpath('//*[@id="lblInstrumentType"]/text()')
+        types_text = ''
+        for type_subtext in types_texts.extract():
+            types_text += ' ' + type_subtext.strip()
+        types_text = types_text.strip()
+        for type_template in self.instrument_types:
+            if type_template in types_text:
+                types.append(type_template)
+        geometry_text = response.xpath('//*[@id="lblInstrumentGeometry"]/text()').extract_first(default='').strip()
+        geometries = []
+        for geometry_template in self.instrument_geometries:
+            if geometry_template in geometry_text:
+                geometries.append(geometry_template)
+        technology = response.xpath('//*[@id="lblInstrumentTechnology"]/text()').extract_first(default='').strip()
+        if technology == '':
+            technology = None
         # status = row.css("td:nth-child(3) ::text").extract_first().strip()
         # launch_date = row.css("td:nth-child(4) ::text").extract_first()
         # if launch_date is not None:
@@ -145,7 +206,8 @@ class CEOSDBSpider(scrapy.Spider):
         #     eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
         # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
         # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()
-        print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids)
+        print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
+              geometries, technology)
         # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
         # if launch_date is not None:
         #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
@@ -154,4 +216,5 @@ class CEOSDBSpider(scrapy.Spider):
         # self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
         # self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
-                         agencies=agency_ids)
+                         agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
+                         technology=technology)
