@@ -80,7 +80,8 @@ class DatabasePipeline(object):
                 db_object.agencies.append(agency)
         elif isinstance(item, items.Instrument):
             db_object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
-                                   maturity=item['maturity'], technology=item['technology'])
+                                   maturity=item['maturity'], technology=item['technology'], sampling=item['sampling'],
+                                   data_access=item['data_access'], data_format=item['data_format'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
                 db_object.agencies.append(agency)
@@ -176,7 +177,12 @@ class OntologyPipeline(object):
             for geometry in item['geometries']:
                 self.g.add((instrument, CEOSDB_schema.hasGeometry, Literal(geometry)))
             self.g.add((instrument, CEOSDB_schema.hasTechnology, Literal(item['technology'])))
-
+            if item['sampling'] is not None:
+                self.g.add((instrument, CEOSDB_schema.samples, Literal(item['sampling'])))
+            if item['data_access'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasDataAccess, Literal(item['data_access'])))
+            if item['data_format'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasDataFormat, Literal(item['data_format'])))
         return item
 
     def close_spider(self, spider):

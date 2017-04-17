@@ -47,3 +47,6 @@ class Instrument(Item):
     types = Field()
     geometries = Field()
     technology = Field()
+    sampling = Field()
+    data_access = Field()
+    data_format = Field()

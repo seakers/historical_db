@@ -104,42 +104,27 @@ class Instrument(DeclarativeBase):
     full_name = Column('full_name', String, nullable=True)
     status = Column('status', String)
     maturity = Column('maturity', String, nullable=True)
-    technology = Column('technology', Enum('Absorption-band MW radiometer/spectrometer',
-	'Atmospheric lidar',
-	'Broad-band radiometer',
-	'Cloud and precipitation radar',
-	'Communications system',
-	'Data collection system',
-	'Doppler lidar',
-	'Electric field sensor',
-	'GNSS radio-occultation receiver',
-	'GNSS receiver',
-	'Gradiometer/accelerometer',
-	'High resolution optical imager',
-	'High-resolution nadir-scanning IR spectrometer',
-	'High-resolution nadir-scanning SW spectrometer',
-	'Imaging radar (SAR)',
-	'Laser retroreflector',
-	'Lidar altimeter',
-	'Lightning imager',
-	'Limb-scanning IR spectrometer',
-	'Limb-scanning MW spectrometer',
-	'Limb-scanning SW spectrometer',
-	'Magnetometer',
-	'Medium-resolution IR spectrometer',
-	'Medium-resolution spectro-radiometer',
-	'Multi-channel/direction/polarisation radiometer',
-	'Multi-purpose imaging MW radiometer',
-	'Multi-purpose imaging Vis/IR radiometer',
-	'Narrow-band channel IR radiometer',
-	'Non-scanning MW radiometer',
-	'Radar altimeter',
-	'Radar scatterometer',
-	'Radio-positioning system',
-	'Satellite-to-satellite ranging system',
-	'Solar irradiance monitor',
-	'Space environment monitor',
-	'Star tracker', name='technologies'), nullable=True)
+    technology = Column('technology',
+                        Enum('Absorption-band MW radiometer/spectrometer', 'Atmospheric lidar', 'Broad-band radiometer',
+                             'Cloud and precipitation radar', 'Communications system', 'Data collection system',
+                             'Doppler lidar', 'Electric field sensor', 'GNSS radio-occultation receiver',
+                             'GNSS receiver', 'Gradiometer/accelerometer', 'High resolution optical imager',
+                             'High-resolution nadir-scanning IR spectrometer',
+                             'High-resolution nadir-scanning SW spectrometer', 'Imaging radar (SAR)',
+                             'Laser retroreflector', 'Lidar altimeter', 'Lightning imager',
+                             'Limb-scanning IR spectrometer', 'Limb-scanning MW spectrometer',
+                             'Limb-scanning SW spectrometer', 'Magnetometer', 'Medium-resolution IR spectrometer',
+                             'Medium-resolution spectro-radiometer', 'Multi-channel/direction/polarisation radiometer',
+                             'Multi-purpose imaging MW radiometer', 'Multi-purpose imaging Vis/IR radiometer',
+                             'Narrow-band channel IR radiometer', 'Non-scanning MW radiometer', 'Radar altimeter',
+                             'Radar scatterometer', 'Radio-positioning system', 'Satellite-to-satellite ranging system',
+                             'Solar irradiance monitor', 'Space environment monitor', 'Star tracker',
+                             name='technologies'),
+                        nullable=True)
+    sampling = Column('sampling', Enum('Imaging', 'Sounding', 'Other', 'TBD', name='sampling_values'))
+    data_access = Column('data_access', Enum('Open Access', 'Constrained Access', 'Very Constrained Access',
+                                             'No Access', name='data_access_values'), nullable=True)
+    data_format = Column('data_format', String, nullable=True)
 
     agencies = relationship('Agency', secondary=designers_table, back_populates='instruments')
     types = relationship('InstrumentType', secondary=type_of_instrument_table, back_populates='instruments')

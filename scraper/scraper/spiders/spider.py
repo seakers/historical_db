@@ -168,6 +168,7 @@ class CEOSDBSpider(scrapy.Spider):
             yield scrapy.Request(url=response.urljoin(url), callback=self.parse_instrument, priority=9)
 
     def parse_instrument(self, response):
+        # Basic instrument information
         instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
         instrument_id = response.url.split('=', 1)[-1]
         instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
@@ -197,24 +198,26 @@ class CEOSDBSpider(scrapy.Spider):
         technology = response.xpath('//*[@id="lblInstrumentTechnology"]/text()').extract_first(default='').strip()
         if technology == '':
             technology = None
-        # status = row.css("td:nth-child(3) ::text").extract_first().strip()
-        # launch_date = row.css("td:nth-child(4) ::text").extract_first()
-        # if launch_date is not None:
-        #     launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
-        # eol_date = row.css("td:nth-child(5) ::text").extract_first()
-        # if eol_date is not None:
-        #     eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
-        # applications = row.css("td:nth-child(6) ::text").extract_first().strip()
-        # orbit_details = row.css("td:nth-child(8) ::text").extract_first().strip()
+        sampling = response.xpath('//*[@id="lblInstrumentSampling"]/text()').extract_first(default='').strip()
+        if sampling == '':
+            sampling = None
+        data_access = response.xpath('//*[@id="lblDataAccess"]/text()').extract_first(default='').strip()
+        if data_access == '':
+            data_access = None
+        data_format = response.xpath('//*[@id="lblDataFormat"]/text()').extract_first(default='').strip()
+        if data_format == '':
+            data_format = None
+
+        # TODO: Missions!!
+        # TODO: Measurements!!
+        # TODO: Summaries!!
+        # TODO: Frequencies!!
+
+        # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
-              geometries, technology)
-        # self.g.add((mission, CEOSDB_schema.hasStatus, Literal(status)))
-        # if launch_date is not None:
-        #     self.g.add((mission, CEOSDB_schema.hasLaunchDate, Literal(launch_date)))
-        # if eol_date is not None:
-        #     self.g.add((mission, CEOSDB_schema.hasEOLDate, Literal(eol_date)))
-        # self.g.add((mission, CEOSDB_schema.hasApplications, Literal(applications)))
-        # self.g.add((mission, CEOSDB_schema.hasOrbitDetails, Literal(orbit_details)))
+              geometries, technology, sampling, data_access, data_format)
+
+        # Send Instrument information to pipelines
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
                          agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
-                         technology=technology)
+                         technology=technology, sampling=sampling, data_access=data_access, data_format=data_format)
