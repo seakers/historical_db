@@ -151,7 +151,7 @@ def master(train_data, dev_data, utility):
     # create all parameters of the model
     param_class = parameters.Parameters(utility)
     params, global_step, init = param_class.parameters(utility)
-    key = "test" if (FLAGS.evaluator_job) else "train"
+    key = "test" if FLAGS.evaluator_job else "train"
     graph = model.Graph(utility, batch_size, utility.FLAGS.max_passes, mode=key)
     graph.create_graph(params, global_step)
     prev_dev_error = 0.0
@@ -163,21 +163,19 @@ def master(train_data, dev_data, utility):
         sess.run(graph.init_op.name)
         to_save = params.copy()
         saver = tf.train.Saver(to_save, max_to_keep=500)
-        if (FLAGS.evaluator_job):
+        if FLAGS.evaluator_job:
             while True:
                 selected_models = {}
                 file_list = tf.gfile.ListDirectory(model_dir)
                 for model_file in file_list:
-                    if ("checkpoint" in model_file or "index" in model_file or
-                                "meta" in model_file):
+                    if "checkpoint" in model_file or "index" in model_file or "meta" in model_file:
                         continue
-                    if ("data" in model_file):
+                    if "data" in model_file:
                         model_file = model_file.split(".")[0]
-                    model_step = int(
-                        model_file.split("_")[len(model_file.split("_")) - 1])
+                    model_step = int(model_file.split("_")[len(model_file.split("_")) - 1])
                     selected_models[model_step] = model_file
                 file_list = sorted(selected_models.items(), key=lambda x: x[0])
-                if (len(file_list) > 0):
+                if len(file_list) > 0:
                     file_list = file_list[0:len(file_list) - 1]
                 print("list of models: ", file_list)
                 for model_file in file_list:
@@ -197,8 +195,7 @@ def master(train_data, dev_data, utility):
             if (not (tf.gfile.IsDirectory(model_dir))):
                 print("create dir: ", model_dir)
                 tf.gfile.MkDir(model_dir)
-            Train(graph, utility, batch_size, train_data, sess, model_dir,
-                  saver)
+            Train(graph, utility, batch_size, train_data, sess, model_dir, saver)
 
 
 def main(args):

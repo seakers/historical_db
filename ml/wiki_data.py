@@ -485,8 +485,7 @@ class WikiQuestionGenerator(object):
             example.processed_number_columns = table_info.processed_number_columns
             example.processed_word_columns = table_info.processed_word_columns
             example.number_column_names = table_info.number_column_names
-            example.number_lookup_matrix = example.lookup_matrix[:,
-                                           number_column_indices]
+            example.number_lookup_matrix = example.lookup_matrix[:, number_column_indices]
             example.word_lookup_matrix = example.lookup_matrix[:, word_column_indices]
 
     def load(self):
