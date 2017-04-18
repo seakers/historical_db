@@ -87,12 +87,8 @@ class Utility:
         self.entry_match_token = "entry_match"
         self.column_match_token = "column_match"
         self.dummy_token = "dummy_token"
-        self.tf_data_type = {}
-        self.tf_data_type["double"] = tf.float64
-        self.tf_data_type["float"] = tf.float32
-        self.np_data_type = {}
-        self.np_data_type["double"] = np.float64
-        self.np_data_type["float"] = np.float32
+        self.tf_data_type = {"double": tf.float64, "float": tf.float32}
+        self.np_data_type = {"double": np.float64, "float": np.float32}
         self.operations_set = ["count"] + [
             "prev", "next", "first_rs", "last_rs", "group_by_max", "greater",
             "lesser", "geq", "leq", "max", "min", "word-match"
@@ -127,7 +123,7 @@ def Train(graph, utility, batch_size, train_data, sess, model_dir,
     start = time.time()
     for i in range(utility.FLAGS.train_steps):
         curr_step = i
-        if (i > 0 and i % FLAGS.write_every == 0):
+        if i > 0 and i % FLAGS.write_every == 0:
             model_file = model_dir + "/model_" + str(i)
             saver.save(sess, model_file)
         if curr + batch_size >= len(train_data):
@@ -214,8 +210,6 @@ def main(args):
     dat = wiki_data.WikiQuestionGenerator(train_name, dev_name, test_name, FLAGS.data_dir)
     train_data, dev_data, test_data = dat.load()
     utility.words = []
-    utility.word_ids = {}
-    utility.reverse_word_ids = {}
     # construct vocabulary
     data_utils.construct_vocab(train_data, utility)
     data_utils.construct_vocab(dev_data, utility, True)

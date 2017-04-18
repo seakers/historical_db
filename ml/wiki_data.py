@@ -43,16 +43,16 @@ def strip_accents(s):
 
 def correct_unicode(string):
     string = strip_accents(string)
-    string = re.sub("\xc2\xa0", " ", string).strip()
-    string = re.sub("\xe2\x80\x93", "-", string).strip()
+    string = re.sub(r"\xc2\xa0", " ", string).strip()
+    string = re.sub(r"\xe2\x80\x93", "-", string).strip()
     # string = re.sub(ur'[\u0300-\u036F]', "", string)
-    string = re.sub("â€š", ",", string)
-    string = re.sub("â€¦", "...", string)
+    string = re.sub(r"â€š", ",", string)
+    string = re.sub(r"â€¦", "...", string)
     # string = re.sub("[Â·ãƒ»]", ".", string)
-    string = re.sub("Ë†", "^", string)
-    string = re.sub("Ëœ", "~", string)
-    string = re.sub("â€¹", "<", string)
-    string = re.sub("â€º", ">", string)
+    string = re.sub(r"Ë†", "^", string)
+    string = re.sub(r"Ëœ", "~", string)
+    string = re.sub(r"â€¹", "<", string)
+    string = re.sub(r"â€º", ">", string)
     # string = re.sub("[â€˜â€™Â´`]", "'", string)
     # string = re.sub("[â€œâ€Â«Â»]", "\"", string)
     # string = re.sub("[â€¢â€ â€¡]", "", string)
@@ -65,11 +65,11 @@ def correct_unicode(string):
 def simple_normalize(string):
     string = correct_unicode(string)
     # Citations
-    string = re.sub("\[(nb ?)?\d+\]", "", string)
-    string = re.sub("\*+$", "", string)
+    string = re.sub(r"\[(nb ?)?\d+\]", "", string)
+    string = re.sub(r"\*+$", "", string)
     # Year in parenthesis
-    string = re.sub("\(\d* ?-? ?\d*\)", "", string)
-    string = re.sub("^\"(.*)\"$", "", string)
+    string = re.sub(r"\(\d* ?-? ?\d*\)", "", string)
+    string = re.sub(r"^\"(.*)\"$", "", string)
     return string
 
 
@@ -77,24 +77,24 @@ def full_normalize(string):
     # print "an: ", string
     string = simple_normalize(string)
     # Remove trailing info in brackets
-    string = re.sub("\[[^\]]*\]", "", string)
+    string = re.sub(r"\[[^\]]*\]", "", string)
     # Remove most unicode characters in other languages
     string = re.sub(r'[\u007F-\uFFFF]', "", string.strip())
     # Remove trailing info in parenthesis
-    string = re.sub("\([^)]*\)$", "", string.strip())
+    string = re.sub(r"\([^)]*\)$", "", string.strip())
     string = final_normalize(string)
     # Get rid of question marks
-    string = re.sub("\?", "", string).strip()
+    string = re.sub(r"\?", "", string).strip()
     # Get rid of trailing colons (usually occur in column titles)
-    string = re.sub("\:$", " ", string).strip()
+    string = re.sub(r":$", " ", string).strip()
     # Get rid of slashes
     string = re.sub(r"/", " ", string).strip()
     string = re.sub(r"\\", " ", string).strip()
     # Replace colon, slash, and dash with space
     # Note: need better replacement for this when parsing time
-    string = re.sub(r"\:", " ", string).strip()
-    string = re.sub("/", " ", string).strip()
-    string = re.sub("-", " ", string).strip()
+    string = re.sub(r":", " ", string).strip()
+    string = re.sub(r"/", " ", string).strip()
+    string = re.sub(r"-", " ", string).strip()
     # Convert empty strings to UNK
     # Important to do this last or near last
     if not string:
@@ -171,7 +171,7 @@ class WikiQuestionLoader(object):
     def load_qa(self):
         data_source = os.path.join(self.data_folder, self.data_name)
         f = tf.gfile.GFile(data_source, "r")
-        id_regex = re.compile("\(id ([^\)]*)\)")
+        id_regex = re.compile(r"\(id ([^\)]*)\)")
         for line in f:
             id_match = id_regex.search(line)
             id = id_match.group(1)
@@ -197,6 +197,15 @@ def is_date(word):
     return True
 
 
+def is_money(word):
+    if not (bool(re.search(r"[a-z0-9]", word, re.IGNORECASE))):
+        return False
+    for i in range(len(word)):
+        if not (word[i] == "E" or word[i] == "." or re.search(r"[0-9]", word[i])):
+            return False
+    return True
+
+
 class WikiQuestionGenerator(object):
     def __init__(self, train_name, dev_name, test_name, root_folder):
         self.train_name = train_name
@@ -215,27 +224,18 @@ class WikiQuestionGenerator(object):
         self.annotated_word_reject["-rrb-"] = 1
         self.annotated_word_reject["UNK"] = 1
 
-    def is_money(self, word):
-        if (not (bool(re.search("[a-z0-9]", word, re.IGNORECASE)))):
-            return False
-        for i in range(len(word)):
-            if (not (word[i] == "E" or word[i] == "." or re.search("[0-9]",
-                                                                   word[i]))):
-                return False
-        return True
-
     def remove_consecutive(self, ner_tags, ner_values):
         for i in range(len(ner_tags)):
-            if ((ner_tags[i] == "NUMBER" or ner_tags[i] == "MONEY" or
-                         ner_tags[i] == "PERCENT" or ner_tags[i] == "DATE") and
-                            i + 1 < len(ner_tags) and ner_tags[i] == ner_tags[i + 1] and
-                        ner_values[i] == ner_values[i + 1] and ner_values[i] != ""):
+            if (ner_tags[i] == "NUMBER" or ner_tags[i] == "MONEY" or ner_tags[i] == "PERCENT" or ner_tags[i] == "DATE") \
+                    and i + 1 < len(ner_tags) \
+                    and ner_tags[i] == ner_tags[i + 1] \
+                    and ner_values[i] == ner_values[i + 1] \
+                    and ner_values[i] != "":
                 word = ner_values[i]
                 word = word.replace(">", "").replace("<", "").replace("=", "").replace(
                     "%", "").replace("~", "").replace("$", "").replace("£", "").replace(
                     "€", "")
-                if (re.search("[A-Z]", word) and not (is_date(word)) and not (
-                        self.is_money(word))):
+                if re.search(r"[A-Z]", word) and not (is_date(word)) and not (is_money(word)):
                     ner_values[i] = "A"
                 else:
                     ner_values[i] = ","
@@ -250,33 +250,30 @@ class WikiQuestionGenerator(object):
         # print "old: ", tokens
         for i in range(len(tokens)):
             word = tokens[i]
-            if (ner_values[i] != "" and
-                    (ner_tags[i] == "NUMBER" or ner_tags[i] == "MONEY" or
-                             ner_tags[i] == "PERCENT" or ner_tags[i] == "DATE")):
+            if ner_values[i] != "" and (ner_tags[i] == "NUMBER" or ner_tags[i] == "MONEY" or
+                                        ner_tags[i] == "PERCENT" or ner_tags[i] == "DATE"):
                 word = ner_values[i]
                 word = word.replace(">", "").replace("<", "").replace("=", "").replace(
                     "%", "").replace("~", "").replace("$", "").replace("£", "").replace(
                     "€", "")
-                if (re.search("[A-Z]", word) and not (is_date(word)) and not (
-                        self.is_money(word))):
+                if re.search(r"[A-Z]", word) and not (is_date(word)) and not (is_money(word)):
                     word = tokens[i]
-                if (is_number(ner_values[i])):
+                if is_number(ner_values[i]):
                     word = float(ner_values[i])
-                elif (is_number(word)):
+                elif is_number(word):
                     word = float(word)
-                if (tokens[i] == "score"):
+                if tokens[i] == "score":
                     word = "score"
-            if (is_number(word)):
+            if is_number(word):
                 word = float(word)
             if word not in self.annotated_word_reject:
-                if (is_number(word) or is_date(word) or self.is_money(word)):
+                if is_number(word) or is_date(word) or is_money(word):
                     sentence.append(word)
                 else:
                     word = full_normalize(word)
-                    if (word not in self.annotated_word_reject) and bool(re.search("[a-z0-9]", word, re.IGNORECASE)):
-                        m = re.search(",", word)
+                    if (word not in self.annotated_word_reject) and bool(re.search(r"[a-z0-9]", word, re.IGNORECASE)):
                         sentence.append(word.replace(",", ""))
-        if (len(sentence) == 0):
+        if len(sentence) == 0:
             sentence.append("UNK")
         return sentence
 
@@ -286,7 +283,7 @@ class WikiQuestionGenerator(object):
         f = tf.gfile.GFile(in_file, "r")
         counter = 0
         for line in f:
-            if (counter > 0):
+            if counter > 0:
                 line = line.strip()
                 (question_id, utterance, context, target_value, tokens, lemma_tokens,
                  pos_tags, ner_tags, ner_values, target_canon) = line.split("\t")
@@ -301,9 +298,9 @@ class WikiQuestionGenerator(object):
 
     def is_number_column(self, a):
         for w in a:
-            if (len(w) != 1):
+            if len(w) != 1:
                 return False
-            if (not (is_number(w[0]))):
+            if not (is_number(w[0])):
                 return False
         return True
 
@@ -321,16 +318,16 @@ class WikiQuestionGenerator(object):
             annotated_table = table.replace("csv", "annotated")
             orig_columns = []
             processed_columns = []
-            f = tf.gfile.GFile(os.path.join(self.root_folder, annotated_table), "r")
-            counter = 0
-            for line in f:
-                if (counter > 0):
-                    line = line.strip()
-                    line = line + "\t" * (13 - len(line.split("\t")))
-                    (row, col, read_id, content, tokens, lemma_tokens, pos_tags, ner_tags,
-                     ner_values, number, date, num2, read_list) = line.split("\t")
-                counter += 1
-            f.close()
+            with tf.gfile.GFile(os.path.join(self.root_folder, annotated_table), "r") as f:
+                counter = 0
+                for line in f:
+                    if counter > 0:
+                        line = line.strip()
+                        line = line + "\t" * (13 - len(line.split("\t")))
+                        (row, col, read_id, content, tokens, lemma_tokens, pos_tags, ner_tags,
+                         ner_values, number, date, num2, read_list) = line.split("\t")
+                    counter += 1
+
             max_row = int(row)
             max_col = int(col)
             for i in range(max_col + 1):
@@ -340,71 +337,67 @@ class WikiQuestionGenerator(object):
                     orig_columns[i].append(bad_number)
                     processed_columns[i].append(bad_number)
             # print orig_columns
-            f = tf.gfile.GFile(os.path.join(self.root_folder, annotated_table), "r")
-            counter = 0
-            column_names = []
-            for line in f:
-                if (counter > 0):
-                    line = line.strip()
-                    line = line + "\t" * (13 - len(line.split("\t")))
-                    (row, col, read_id, content, tokens, lemma_tokens, pos_tags, ner_tags,
-                     ner_values, number, date, num2, read_list) = line.split("\t")
-                    entry = self.pre_process_sentence(tokens, ner_tags, ner_values)
-                    if (row == "-1"):
-                        column_names.append(entry)
-                    else:
-                        orig_columns[int(col)][int(row)] = entry
-                        if (len(entry) == 1 and is_number(entry[0])):
-                            processed_columns[int(col)][int(row)] = float(entry[0])
+            with tf.gfile.GFile(os.path.join(self.root_folder, annotated_table), "r") as f:
+                counter = 0
+                column_names = []
+                for line in f:
+                    if counter > 0:
+                        line = line.strip()
+                        line = line + "\t" * (13 - len(line.split("\t")))
+                        (row, col, read_id, content, tokens, lemma_tokens, pos_tags, ner_tags,
+                         ner_values, number, date, num2, read_list) = line.split("\t")
+                        entry = self.pre_process_sentence(tokens, ner_tags, ner_values)
+                        if row == "-1":
+                            column_names.append(entry)
                         else:
-                            for single_entry in entry:
-                                if (is_number(single_entry)):
-                                    processed_columns[int(col)][int(row)] = float(single_entry)
-                                    break
-                            nt = ner_tags.split("|")
-                            nv = ner_values.split("|")
-                            for i_entry in range(len(tokens.split("|"))):
-                                if (nt[i_entry] == "DATE" and
-                                        is_number(nv[i_entry].replace("-", "").replace("X", ""))):
-                                    processed_columns[int(col)][int(row)] = float(nv[
-                                                                                      i_entry].replace("-", "").replace(
-                                        "X", ""))
-                                    # processed_columns[int(col)][int(row)] =  float(nv[i_entry])
-                        if (len(entry) == 1 and (is_number(entry[0]) or is_date(entry[0]) or
-                                                     self.is_money(entry[0]))):
-                            if (len(entry) == 1 and not (is_number(entry[0])) and
-                                    is_date(entry[0])):
-                                entry[0] = entry[0].replace("X", "x")
-                counter += 1
-            word_columns = []
-            processed_word_columns = []
-            word_column_names = []
-            word_column_indices = []
-            number_columns = []
-            processed_number_columns = []
-            number_column_names = []
-            number_column_indices = []
-            for i in range(max_col + 1):
-                if (self.is_number_column(orig_columns[i])):
-                    number_column_indices.append(i)
-                    number_column_names.append(column_names[i])
-                    temp = []
-                    for w in orig_columns[i]:
-                        if (is_number(w[0])):
-                            temp.append(w[0])
-                    number_columns.append(temp)
-                    processed_number_columns.append(processed_columns[i])
-                else:
-                    word_column_indices.append(i)
-                    word_column_names.append(column_names[i])
-                    word_columns.append(orig_columns[i])
-                    processed_word_columns.append(processed_columns[i])
-            table_info = TableInfo(
-                word_columns, word_column_names, word_column_indices, number_columns,
-                number_column_names, number_column_indices, processed_word_columns,
-                processed_number_columns, orig_columns)
-            self.annotated_tables[table] = table_info
-            f.close()
+                            orig_columns[int(col)][int(row)] = entry
+                            if len(entry) == 1 and is_number(entry[0]):
+                                processed_columns[int(col)][int(row)] = float(entry[0])
+                            else:
+                                for single_entry in entry:
+                                    if is_number(single_entry):
+                                        processed_columns[int(col)][int(row)] = float(single_entry)
+                                        break
+                                nt = ner_tags.split("|")
+                                nv = ner_values.split("|")
+                                for i_entry in range(len(tokens.split("|"))):
+                                    if nt[i_entry] == "DATE" and is_number(nv[i_entry].replace("-", "").replace("X", "")):
+                                        processed_columns[int(col)][int(row)] = float(nv[i_entry].replace("-", "").replace(
+                                            "X", ""))
+                                        # processed_columns[int(col)][int(row)] =  float(nv[i_entry])
+                            if len(entry) == 1 and (is_number(entry[0]) or is_date(entry[0]) or is_money(entry[0])):
+                                if (len(entry) == 1 and not (is_number(entry[0])) and
+                                        is_date(entry[0])):
+                                    entry[0] = entry[0].replace("X", "x")
+                    counter += 1
+                word_columns = []
+                processed_word_columns = []
+                word_column_names = []
+                word_column_indices = []
+                number_columns = []
+                processed_number_columns = []
+                number_column_names = []
+                number_column_indices = []
+                for i in range(max_col + 1):
+                    if self.is_number_column(orig_columns[i]):
+                        number_column_indices.append(i)
+                        number_column_names.append(column_names[i])
+                        temp = []
+                        for w in orig_columns[i]:
+                            if is_number(w[0]):
+                                temp.append(w[0])
+                        number_columns.append(temp)
+                        processed_number_columns.append(processed_columns[i])
+                    else:
+                        word_column_indices.append(i)
+                        word_column_names.append(column_names[i])
+                        word_columns.append(orig_columns[i])
+                        processed_word_columns.append(processed_columns[i])
+                table_info = TableInfo(
+                    word_columns, word_column_names, word_column_indices, number_columns,
+                    number_column_names, number_column_indices, processed_word_columns,
+                    processed_number_columns, orig_columns)
+                self.annotated_tables[table] = table_info
 
     def answer_classification(self):
         lookup_questions = 0
@@ -417,19 +410,17 @@ class WikiQuestionGenerator(object):
         tot = 0
         got = 0
         ice = {}
-        with tf.gfile.GFile(
-                        self.root_folder + "/arvind-with-norms-2.tsv", mode="r") as f:
+        with tf.gfile.GFile(self.root_folder + "/arvind-with-norms-2.tsv", mode="r") as f:
             lines = f.readlines()
             for line in lines:
                 line = line.strip()
                 if line.split("\t")[0] not in self.annotated_examples:
                     continue
-                if (len(line.split("\t")) == 4):
+                if len(line.split("\t")) == 4:
                     line = line + "\t" * (5 - len(line.split("\t")))
-                    if (not (is_number(line.split("\t")[2]))):
+                    if not (is_number(line.split("\t")[2])):
                         ice_bad_questions += 1
-                (example_id, ans_index, ans_raw, process_answer,
-                 matched_cells) = line.split("\t")
+                (example_id, ans_index, ans_raw, process_answer, matched_cells) = line.split("\t")
                 if example_id in ice:
                     ice[example_id].append(line.split("\t"))
                 else:
@@ -443,27 +434,25 @@ class WikiQuestionGenerator(object):
             n_rows = len(table_info.orig_columns[0])
             example.lookup_matrix = np.zeros((n_rows, n_cols))
             exact_matches = {}
-            for (example_id, ans_index, ans_raw, process_answer,
-                 matched_cells) in ice[q_id]:
+            for (example_id, ans_index, ans_raw, process_answer, matched_cells) in ice[q_id]:
                 for match_cell in matched_cells.split("|"):
-                    if (len(match_cell.split(",")) == 2):
+                    if len(match_cell.split(",")) == 2:
                         (row, col) = match_cell.split(",")
                         row = int(row)
                         col = int(col)
-                        if (row >= 0):
+                        if row >= 0:
                             exact_matches[ans_index] = 1
             answer_is_in_table = len(exact_matches) == len(example.answer)
-            if (answer_is_in_table):
-                for (example_id, ans_index, ans_raw, process_answer,
-                     matched_cells) in ice[q_id]:
+            if answer_is_in_table:
+                for (example_id, ans_index, ans_raw, process_answer, matched_cells) in ice[q_id]:
                     for match_cell in matched_cells.split("|"):
-                        if (len(match_cell.split(",")) == 2):
+                        if len(match_cell.split(",")) == 2:
                             (row, col) = match_cell.split(",")
                             row = int(row)
                             col = int(col)
                             example.lookup_matrix[row, col] = float(ans_index) + 1.0
             example.lookup_number_answer = 0.0
-            if (answer_is_in_table):
+            if answer_is_in_table:
                 lookup_questions += 1
                 if len(example.answer) == 1 and is_number(example.answer[0]):
                     example.number_answer = float(example.answer[0])
@@ -475,7 +464,7 @@ class WikiQuestionGenerator(object):
                     word_lookup_questions += 1
                     example.is_word_lookup = True
             else:
-                if (len(example.answer) == 1 and is_number(example.answer[0])):
+                if len(example.answer) == 1 and is_number(example.answer[0]):
                     example.number_answer = example.answer[0]
                     example.is_number_calc = True
                 else:
@@ -504,8 +493,7 @@ class WikiQuestionGenerator(object):
         train_data = []
         dev_data = []
         test_data = []
-        self.load_annotated_data(
-            os.path.join(self.data_folder, "training.annotated"))
+        self.load_annotated_data(os.path.join(self.data_folder, "training.annotated"))
         self.load_annotated_tables()
         self.answer_classification()
         self.train_loader.load()
@@ -518,8 +506,7 @@ class WikiQuestionGenerator(object):
             example = self.dev_loader.examples[i]
             dev_data.append(self.annotated_examples[example])
 
-        self.load_annotated_data(
-            os.path.join(self.data_folder, "pristine-unseen-tables.annotated"))
+        self.load_annotated_data(os.path.join(self.data_folder, "pristine-unseen-tables.annotated"))
         self.load_annotated_tables()
         self.answer_classification()
         self.test_loader.load()
