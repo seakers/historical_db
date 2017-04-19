@@ -104,9 +104,7 @@ def evaluate(sess, data, batch_size, graph, i):
     num_examples = 0.0
     gc = 0.0
     for j in range(0, len(data) - batch_size + 1, batch_size):
-        [ct] = sess.run([graph.final_correct],
-                        feed_dict=data_utils.generate_feed_dict(data, j, batch_size,
-                                                                graph))
+        [ct] = sess.run([graph.final_correct], feed_dict=data_utils.generate_feed_dict(data, j, batch_size, graph))
         gc += ct * batch_size
         num_examples += batch_size
     print("dev set accuracy   after ", i, " : ", gc / num_examples)
@@ -182,8 +180,7 @@ def master(train_data, dev_data, utility):
                     model_file = model_file[1]
                     print("restoring: ", model_file)
                     saver.restore(sess, model_dir + "/" + model_file)
-                    model_step = int(
-                        model_file.split("_")[len(model_file.split("_")) - 1])
+                    model_step = int(model_file.split("_")[len(model_file.split("_")) - 1])
                     print("evaluating on dev ", model_file, model_step)
                     evaluate(sess, dev_data, batch_size, graph, model_step)
         else:

@@ -38,9 +38,9 @@ class DatabasePipeline(object):
         session = self.Session()
 
         try:
-            for instrument in session.query(Instrument).all():
+            for instrument in session.query(Instrument):
                 session.delete(instrument)
-            for mission in session.query(Mission).all():
+            for mission in session.query(Mission):
                 session.delete(mission)
             for agency in session.query(Agency):
                 session.delete(agency)
@@ -81,7 +81,8 @@ class DatabasePipeline(object):
         elif isinstance(item, items.Instrument):
             db_object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
                                    maturity=item['maturity'], technology=item['technology'], sampling=item['sampling'],
-                                   data_access=item['data_access'], data_format=item['data_format'])
+                                   data_access=item['data_access'], data_format=item['data_format'],
+                                   measurements_and_applications=item['measurements_and_applications'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
                 db_object.agencies.append(agency)
@@ -91,6 +92,9 @@ class DatabasePipeline(object):
             for geometry in item['geometries']:
                 instrument_geometry = session.query(GeometryType).filter(GeometryType.name == geometry).first()
                 db_object.geometries.append(instrument_geometry)
+            for mission_id in item['missions']:
+                mission = session.query(Mission).get(mission_id)
+                db_object.missions.append(mission)
         else:
             db_object = None
 
@@ -170,6 +174,8 @@ class OntologyPipeline(object):
             self.g.add((instrument, RDF.type, CEOSDB_schema.instrumentClass))
             if item['full_name'] is not None:
                 self.g.add((instrument, CEOSDB_schema.hasFullName, Literal(item['full_name'])))
+            for agency_id in item['agencies']:
+                self.g.add((instrument, CEOSDB_schema.builtBy, URIRef("http://ceosdb/agency#" + str(agency_id))))
             self.g.add((instrument, CEOSDB_schema.hasStatus, Literal(item['status'])))
             self.g.add((instrument, CEOSDB_schema.hasMaturity, Literal(item['maturity'])))
             for type in item['types']:
@@ -183,6 +189,9 @@ class OntologyPipeline(object):
                 self.g.add((instrument, CEOSDB_schema.hasDataAccess, Literal(item['data_access'])))
             if item['data_format'] is not None:
                 self.g.add((instrument, CEOSDB_schema.hasDataFormat, Literal(item['data_format'])))
+            self.g.add((instrument, CEOSDB_schema.hasMeasurementsSummary, Literal(item['measurements_and_applications'])))
+            for mission_id in item['missions']:
+                self.g.add((instrument, CEOSDB_schema.isInMission, URIRef("http://ceosdb/mission#" + str(mission_id))))
         return item
 
     def close_spider(self, spider):

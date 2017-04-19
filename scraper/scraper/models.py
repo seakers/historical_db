@@ -35,8 +35,12 @@ type_of_instrument_table = Table('type_of_instrument', DeclarativeBase.metadata,
                                  Column('instrument_type_id', Integer, ForeignKey('instrument_types.id')))
 
 geometry_of_instrument_table = Table('geometry_of_instrument', DeclarativeBase.metadata,
-                                 Column('instrument_id', Integer, ForeignKey('instruments.id')),
-                                 Column('instrument_geometry_id', Integer, ForeignKey('geometry_types.id')))
+                                     Column('instrument_id', Integer, ForeignKey('instruments.id')),
+                                     Column('instrument_geometry_id', Integer, ForeignKey('geometry_types.id')))
+
+instruments_in_mission_table = Table('instruments_in_mission', DeclarativeBase.metadata,
+                                     Column('mission_id', Integer, ForeignKey('missions.id')),
+                                     Column('instrument_id', Integer, ForeignKey('instruments.id')))
 
 
 class Agency(DeclarativeBase):
@@ -73,6 +77,7 @@ class Mission(DeclarativeBase):
     repeat_cycle = Column('repeat_cycle', String, nullable=True)
 
     agencies = relationship('Agency', secondary=operators_table, back_populates='missions')
+    instruments = relationship('Instrument', secondary=instruments_in_mission_table, back_populates='missions')
 
 
 class InstrumentType(DeclarativeBase):
@@ -125,7 +130,9 @@ class Instrument(DeclarativeBase):
     data_access = Column('data_access', Enum('Open Access', 'Constrained Access', 'Very Constrained Access',
                                              'No Access', name='data_access_values'), nullable=True)
     data_format = Column('data_format', String, nullable=True)
+    measurements_and_applications = Column('measurements_and_applications', String, nullable=True)
 
     agencies = relationship('Agency', secondary=designers_table, back_populates='instruments')
     types = relationship('InstrumentType', secondary=type_of_instrument_table, back_populates='instruments')
     geometries = relationship('GeometryType', secondary=geometry_of_instrument_table, back_populates='instruments')
+    missions = relationship('Mission', secondary=instruments_in_mission_table, back_populates='instruments')

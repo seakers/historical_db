@@ -50,3 +50,5 @@ class Instrument(Item):
     sampling = Field()
     data_access = Field()
     data_format = Field()
+    measurements_and_applications = Field()
+    missions = Field()

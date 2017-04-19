@@ -51,6 +51,8 @@ class CEOSDBSpider(scrapy.Spider):
                              'TBD'
                              ]
 
+    mission_ids = []
+
     def start_requests(self):
         # For agencies, do brute force requests as there is not a comprehensive list of them
         for i in range(1, 202):
@@ -133,13 +135,15 @@ class CEOSDBSpider(scrapy.Spider):
         orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
         repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
 
-        # TODO: Instruments!!!!
         # TODO: Save measurements of mission (and which instrument does each measurement?)
 
         # Debug information
         print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
               orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_altitude, orbit_longitude, orbit_LST,
               repeat_cycle)
+
+        # Save information for later
+        self.mission_ids.append(int(mission_id))
 
         # Send mission information to pipelines
         yield Mission(id=mission_id, name=mission_name, full_name=mission_fullname, agencies=agency_ids,
@@ -208,16 +212,27 @@ class CEOSDBSpider(scrapy.Spider):
         if data_format == '':
             data_format = None
 
-        # TODO: Missions!!
+        # Measurements summary
+        measurements_and_applications = \
+            response.xpath('//*[@id="lblInstrumentMeasurementsApplications"]/text()').extract_first(default='').strip()
+
+        # Missions
+        missions = []
+        for mission_link in response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[18]/td[2]/table/tr/td/a/@href').extract():
+            mission_id = int(mission_link.strip().split('=', 1)[-1])
+            if mission_id not in missions and mission_id in self.mission_ids:
+                missions.append(mission_id)
+
         # TODO: Measurements!!
         # TODO: Summaries!!
         # TODO: Frequencies!!
 
         # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
-              geometries, technology, sampling, data_access, data_format)
+              geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions)
 
         # Send Instrument information to pipelines
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
                          agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
-                         technology=technology, sampling=sampling, data_access=data_access, data_format=data_format)
+                         technology=technology, sampling=sampling, data_access=data_access, data_format=data_format,
+                         measurements_and_applications=measurements_and_applications, missions=missions)
