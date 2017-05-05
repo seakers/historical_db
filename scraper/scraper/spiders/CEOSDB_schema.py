@@ -3,8 +3,11 @@ from rdflib import URIRef
 agencyClass = URIRef("http://ceosdb/class/SpaceAgency")
 missionClass = URIRef("http://ceosdb/class/Mission")
 instrumentClass = URIRef("http://ceosdb/class/Instrument")
+measurementBroadCategoryClass = URIRef("http://ceosdb/class/MeasurementBroadCategory")
 measurementCategoryClass = URIRef("http://ceosdb/class/MeasurementCategory")
 measurementClass = URIRef("http://ceosdb/class/Measurement")
+
+hasDescription = URIRef("http://ceosdb/schemas/relationship/hasDescription")
 
 isFromCountry = URIRef("http://ceosdb/schemas/relationship/isFromCountry")
 hasFullName = URIRef("http://ceosdb/schemas/relationship/hasFullName")

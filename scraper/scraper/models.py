@@ -43,6 +43,15 @@ instruments_in_mission_table = Table('instruments_in_mission', DeclarativeBase.m
                                      Column('instrument_id', Integer, ForeignKey('instruments.id')))
 
 
+class BroadMeasurementCategory(DeclarativeBase):
+    """Sqlalchemy broad measurement categories model"""
+    __tablename__ = 'broad_measurement_categories'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+    description = Column('description', String)
+
+
 class Agency(DeclarativeBase):
     """Sqlalchemy agencies model"""
     __tablename__ = 'agencies'

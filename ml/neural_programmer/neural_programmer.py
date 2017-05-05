@@ -20,12 +20,14 @@ Author: aneelakantan (Arvind Neelakantan)
 """
 import time
 from random import Random
-import numpy as np
-import tensorflow as tf
-import model
-import wiki_data
-import parameters
+
 import data_utils
+import numpy as np
+import parameters
+import tensorflow as tf
+import wiki_data
+
+from neural_programmer import model
 
 tf.flags.DEFINE_integer("train_steps", 100001, "Number of steps to train")
 tf.flags.DEFINE_integer("eval_cycle", 500,

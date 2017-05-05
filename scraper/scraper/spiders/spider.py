@@ -6,7 +6,7 @@ import re
 import dateparser
 import scrapy
 
-from scraper.items import Agency, Mission, Instrument
+from scraper.items import BroadMeasurementCategory, MeasurementCategory, Agency, Mission, Instrument
 
 
 class CEOSDBSpider(scrapy.Spider):
@@ -54,6 +54,8 @@ class CEOSDBSpider(scrapy.Spider):
     mission_ids = []
 
     def start_requests(self):
+        yield scrapy.Request(url='http://database.eohandbook.com/measurements/overview.aspx',
+                             callback=self.prepare_broad_categories, priority=25)
         # For agencies, do brute force requests as there is not a comprehensive list of them
         for i in range(1, 202):
             yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i),
@@ -74,6 +76,40 @@ class CEOSDBSpider(scrapy.Spider):
         elif 'INSTRUMENTS' in title:
             return self.parse_instruments(response)
         # More can be added if needed
+
+    def prepare_broad_categories(self, response):
+        broad_cat_links = \
+            response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr[2]/td/table/tr/td[1]/table/tr/td/a[not(img)]/@href')\
+                .extract()
+        for link in broad_cat_links:
+            url = link.strip()
+            yield scrapy.Request(url=response.urljoin(url), callback=self.parse_broad_category, priority=24)
+
+    def parse_broad_category(self, response):
+        bc_id = response.url.split('=', 1)[-1]
+        name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()')\
+            .extract_first().strip()[2:]
+        description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()')\
+            .extract_first().strip()
+
+        yield BroadMeasurementCategory(id=bc_id, name=name, description=description)
+
+        categories = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[2]/td/table/tr/td[1]/a/@href') \
+            .extract()
+        for category_link in categories:
+            yield scrapy.Request(url=response.urljoin(category_link), callback=self.parse_category, priority=23)
+
+    def parse_category(self, response):
+        c_id = response.url.split('=', 1)[-1]
+        name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()') \
+                       .extract()[2].strip()
+        description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()') \
+                              .extract_first().strip()
+        broad_category_id = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/a[2]/@href') \
+                                    .extract_first().strip().split('=')[-1]
+
+        yield MeasurementCategory(id=c_id, name=name, description=description, broad_category_id=broad_category_id)
+
 
     def parse_agency(self, response):
         agency = response.xpath('//*[@id="lblAgencyNameAbbr"]/text()').extract_first(default='').strip()[2:]

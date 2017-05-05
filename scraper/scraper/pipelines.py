@@ -7,7 +7,8 @@
 
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
-from scraper.models import Agency, Mission, InstrumentType, GeometryType, Instrument, db_connect, create_tables
+from scraper.models import BroadMeasurementCategory, \
+    Agency, Mission, InstrumentType, GeometryType, Instrument, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
@@ -44,6 +45,8 @@ class DatabasePipeline(object):
                 session.delete(mission)
             for agency in session.query(Agency):
                 session.delete(agency)
+            for broad_category in session.query(BroadMeasurementCategory):
+                session.delete(broad_category)
             for instrument_type in session.query(InstrumentType):
                 session.delete(instrument_type)
             for geometry_type in session.query(GeometryType):
@@ -65,7 +68,9 @@ class DatabasePipeline(object):
         """
         session = self.Session()
 
-        if isinstance(item, items.Agency):
+        if isinstance(item, items.BroadMeasurementCategory):
+            db_object = BroadMeasurementCategory(**item)
+        elif isinstance(item, items.Agency):
             db_object = Agency(**item)
         elif isinstance(item, items.Mission):
             db_object = Mission(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
@@ -124,6 +129,7 @@ class OntologyPipeline(object):
         self.g.add((CEOSDB_schema.agencyClass, RDFS.subClassOf, OWL.Thing))
         self.g.add((CEOSDB_schema.missionClass, RDFS.subClassOf, OWL.Thing))
         self.g.add((CEOSDB_schema.instrumentClass, RDFS.subClassOf, OWL.Thing))
+        self.g.add((CEOSDB_schema.measurementBroadCategoryClass, RDFS.subClassOf, OWL.Thing))
         self.g.add((CEOSDB_schema.measurementCategoryClass, RDFS.subClassOf, OWL.Thing))
         self.g.add((CEOSDB_schema.measurementClass, RDFS.subClassOf, OWL.Thing))
 
@@ -133,8 +139,12 @@ class OntologyPipeline(object):
         This method is called for every item pipeline component.
 
         """
-
-        if isinstance(item, items.Agency):
+        if isinstance(item, items.BroadMeasurementCategory):
+            sa = URIRef("http://ceosdb/broad_category#" + item['id'])
+            self.g.add((sa, RDFS.label, Literal(item['name'])))
+            self.g.add((sa, RDF.type, CEOSDB_schema.measurementBroadCategoryClass))
+            self.g.add((sa, CEOSDB_schema.hasDescription, Literal(item['description'])))
+        elif isinstance(item, items.Agency):
             sa = URIRef("http://ceosdb/agency#" + item['id'])
             self.g.add((sa, RDFS.label, Literal(item['name'])))
             self.g.add((sa, RDF.type, CEOSDB_schema.agencyClass))

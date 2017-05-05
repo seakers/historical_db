@@ -8,6 +8,21 @@
 from scrapy.item import Item, Field
 
 
+class BroadMeasurementCategory(Item):
+    """Defines a measurement broad category"""
+    id = Field()
+    name = Field()
+    description = Field()
+
+
+class MeasurementCategory(Item):
+    """Defines a measurement category"""
+    id = Field()
+    name = Field()
+    description = Field()
+    broad_category_id = Field()
+
+
 class Agency(Item):
     """Defines a Space Agency"""
     id = Field()

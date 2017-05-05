@@ -17,8 +17,10 @@
 
 import copy
 import numbers
+
 import numpy as np
-import wiki_data
+
+from neural_programmer import wiki_data
 
 
 def return_index(a):

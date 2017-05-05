@@ -17,7 +17,8 @@
 
 import numpy as np
 import tensorflow as tf
-import nn_utils
+
+from neural_programmer import nn_utils
 
 
 class Graph():

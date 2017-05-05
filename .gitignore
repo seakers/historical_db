@@ -93,4 +93,5 @@ ENV/
 .idea/tasks.xml
 
 # ML
-ml/data
+ml/neural_programmer/data
+ml/neural_programmer/model
