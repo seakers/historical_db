@@ -42,6 +42,10 @@ instruments_in_mission_table = Table('instruments_in_mission', DeclarativeBase.m
                                      Column('mission_id', Integer, ForeignKey('missions.id')),
                                      Column('instrument_id', Integer, ForeignKey('instruments.id')))
 
+measurements_of_instrument_table = Table('measurements_of_instrument', DeclarativeBase.metadata,
+                                         Column('instrument_id', Integer, ForeignKey('instruments.id')),
+                                         Column('measurement_id', Integer, ForeignKey('measurements.id')))
+
 
 class BroadMeasurementCategory(DeclarativeBase):
     """Sqlalchemy broad measurement categories model"""
@@ -50,6 +54,31 @@ class BroadMeasurementCategory(DeclarativeBase):
     id = Column(Integer, primary_key=True)
     name = Column('name', String)
     description = Column('description', String)
+    measurement_categories = relationship('MeasurementCategory', back_populates='broad_measurement_category')
+
+
+class MeasurementCategory(DeclarativeBase):
+    """Sqlalchemy measurement categories model"""
+    __tablename__ = 'measurement_categories'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+    description = Column('description', String)
+    broad_measurement_category_id = Column(Integer, ForeignKey('broad_measurement_categories.id'))
+    broad_measurement_category = relationship('BroadMeasurementCategory', back_populates='measurement_categories')
+    measurements = relationship('Measurement', back_populates='measurement_category')
+
+
+class Measurement(DeclarativeBase):
+    """Sqlalchemy measurements model"""
+    __tablename__ = 'measurements'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+    description = Column('description', String)
+    measurement_category_id = Column(Integer, ForeignKey('measurement_categories.id'))
+    measurement_category = relationship('MeasurementCategory', back_populates='measurements')
+    instruments = relationship('Instrument', secondary=measurements_of_instrument_table, back_populates='measurements')
 
 
 class Agency(DeclarativeBase):
@@ -145,3 +174,4 @@ class Instrument(DeclarativeBase):
     types = relationship('InstrumentType', secondary=type_of_instrument_table, back_populates='instruments')
     geometries = relationship('GeometryType', secondary=geometry_of_instrument_table, back_populates='instruments')
     missions = relationship('Mission', secondary=instruments_in_mission_table, back_populates='instruments')
+    measurements = relationship('Measurement', secondary=measurements_of_instrument_table, back_populates='instruments')

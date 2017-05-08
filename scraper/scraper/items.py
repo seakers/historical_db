@@ -20,7 +20,15 @@ class MeasurementCategory(Item):
     id = Field()
     name = Field()
     description = Field()
-    broad_category_id = Field()
+    broad_measurement_category_id = Field()
+
+
+class Measurement(Item):
+    """Defines a measurement"""
+    id = Field()
+    name = Field()
+    description = Field()
+    measurement_category_id = Field()
 
 
 class Agency(Item):
@@ -67,3 +75,4 @@ class Instrument(Item):
     data_format = Field()
     measurements_and_applications = Field()
     missions = Field()
+    measurements = Field()

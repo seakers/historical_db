@@ -9,6 +9,10 @@ measurementClass = URIRef("http://ceosdb/class/Measurement")
 
 hasDescription = URIRef("http://ceosdb/schemas/relationship/hasDescription")
 
+hasBroadCategory =URIRef("http://ceosdb/schemas/relationship/hasBroadCategory")
+
+hasCategory =URIRef("http://ceosdb/schemas/relationship/hasCategory")
+
 isFromCountry = URIRef("http://ceosdb/schemas/relationship/isFromCountry")
 hasFullName = URIRef("http://ceosdb/schemas/relationship/hasFullName")
 builtBy = URIRef("http://ceosdb/schemas/relationship/builtBy")

@@ -7,7 +7,7 @@
 
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
-from scraper.models import BroadMeasurementCategory, \
+from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
     Agency, Mission, InstrumentType, GeometryType, Instrument, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
@@ -35,6 +35,12 @@ class DatabasePipeline(object):
             geometry_type = GeometryType(name=geometry)
             session.add(geometry_type)
 
+    def add_measurement_category(self, session):
+        broad_other = BroadMeasurementCategory(id=1000, name='Other', description='Other')
+        session.add(broad_other)
+        cat_other = MeasurementCategory(id=1000, name='Other', description='Other', broad_measurement_category_id=1000)
+        session.add(cat_other)
+
     def open_spider(self, spider):
         session = self.Session()
 
@@ -45,6 +51,10 @@ class DatabasePipeline(object):
                 session.delete(mission)
             for agency in session.query(Agency):
                 session.delete(agency)
+            for measurement in session.query(Measurement):
+                session.delete(measurement)
+            for category in session.query(MeasurementCategory):
+                session.delete(category)
             for broad_category in session.query(BroadMeasurementCategory):
                 session.delete(broad_category)
             for instrument_type in session.query(InstrumentType):
@@ -53,6 +63,7 @@ class DatabasePipeline(object):
                 session.delete(geometry_type)
             self.fill_instrument_types(session, spider.instrument_types)
             self.fill_geometry_types(session, spider.instrument_geometries)
+            self.add_measurement_category(session)
             session.commit()
         except:
             session.rollback()
@@ -70,6 +81,10 @@ class DatabasePipeline(object):
 
         if isinstance(item, items.BroadMeasurementCategory):
             db_object = BroadMeasurementCategory(**item)
+        elif isinstance(item, items.MeasurementCategory):
+            db_object = MeasurementCategory(**item)
+        elif isinstance(item, items.Measurement):
+            db_object = Measurement(**item)
         elif isinstance(item, items.Agency):
             db_object = Agency(**item)
         elif isinstance(item, items.Mission):
@@ -100,6 +115,9 @@ class DatabasePipeline(object):
             for mission_id in item['missions']:
                 mission = session.query(Mission).get(mission_id)
                 db_object.missions.append(mission)
+            for measurement_id in item['measurements']:
+                measurement = session.query(Measurement).get(measurement_id)
+                db_object.measurements.append(measurement)
         else:
             db_object = None
 
@@ -140,10 +158,22 @@ class OntologyPipeline(object):
 
         """
         if isinstance(item, items.BroadMeasurementCategory):
-            sa = URIRef("http://ceosdb/broad_category#" + item['id'])
-            self.g.add((sa, RDFS.label, Literal(item['name'])))
-            self.g.add((sa, RDF.type, CEOSDB_schema.measurementBroadCategoryClass))
-            self.g.add((sa, CEOSDB_schema.hasDescription, Literal(item['description'])))
+            bmc = URIRef("http://ceosdb/broad_category#" + item['id'])
+            self.g.add((bmc, RDFS.label, Literal(item['name'])))
+            self.g.add((bmc, RDF.type, CEOSDB_schema.measurementBroadCategoryClass))
+            self.g.add((bmc, CEOSDB_schema.hasDescription, Literal(item['description'])))
+        elif isinstance(item, items.MeasurementCategory):
+            mc = URIRef("http://ceosdb/category#" + item['id'])
+            self.g.add((mc, RDFS.label, Literal(item['name'])))
+            self.g.add((mc, RDF.type, CEOSDB_schema.measurementCategoryClass))
+            self.g.add((mc, CEOSDB_schema.hasDescription, Literal(item['description'])))
+            self.g.add((mc, CEOSDB_schema.hasBroadCategory, Literal(item['broad_measurement_category_id'])))
+        elif isinstance(item, items.Measurement):
+            mc = URIRef("http://ceosdb/measurement#" + str(item['id']))
+            self.g.add((mc, RDFS.label, Literal(item['name'])))
+            self.g.add((mc, RDF.type, CEOSDB_schema.measurementClass))
+            self.g.add((mc, CEOSDB_schema.hasDescription, Literal(item['description'])))
+            self.g.add((mc, CEOSDB_schema.hasCategory, Literal(item['measurement_category_id'])))
         elif isinstance(item, items.Agency):
             sa = URIRef("http://ceosdb/agency#" + item['id'])
             self.g.add((sa, RDFS.label, Literal(item['name'])))
@@ -202,6 +232,8 @@ class OntologyPipeline(object):
             self.g.add((instrument, CEOSDB_schema.hasMeasurementsSummary, Literal(item['measurements_and_applications'])))
             for mission_id in item['missions']:
                 self.g.add((instrument, CEOSDB_schema.isInMission, URIRef("http://ceosdb/mission#" + str(mission_id))))
+            for measurement_id in item['measurements']:
+                self.g.add((instrument, CEOSDB_schema.isInMission, URIRef("http://ceosdb/measurement#" + str(measurement_id))))
         return item
 
     def close_spider(self, spider):

@@ -6,7 +6,7 @@ import re
 import dateparser
 import scrapy
 
-from scraper.items import BroadMeasurementCategory, MeasurementCategory, Agency, Mission, Instrument
+from scraper.items import BroadMeasurementCategory, MeasurementCategory, Measurement, Agency, Mission, Instrument
 
 
 class CEOSDBSpider(scrapy.Spider):
@@ -52,6 +52,7 @@ class CEOSDBSpider(scrapy.Spider):
                              ]
 
     mission_ids = []
+    measurment_ids = []
 
     def start_requests(self):
         yield scrapy.Request(url='http://database.eohandbook.com/measurements/overview.aspx',
@@ -92,6 +93,7 @@ class CEOSDBSpider(scrapy.Spider):
         description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()')\
             .extract_first().strip()
 
+        print('Broad category:', bc_id, name, description)
         yield BroadMeasurementCategory(id=bc_id, name=name, description=description)
 
         categories = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[2]/td/table/tr/td[1]/a/@href') \
@@ -108,7 +110,18 @@ class CEOSDBSpider(scrapy.Spider):
         broad_category_id = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/a[2]/@href') \
                                     .extract_first().strip().split('=')[-1]
 
-        yield MeasurementCategory(id=c_id, name=name, description=description, broad_category_id=broad_category_id)
+        print('Category:', c_id, name, description, broad_category_id)
+        yield MeasurementCategory(id=c_id, name=name, description=description,
+                                  broad_measurement_category_id=broad_category_id)
+
+        measurement_rows = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr[1]/td/table/tr[2]/td/table/tr')
+        for measurement_row in measurement_rows[1:]:
+            m_id = int(measurement_row.xpath('td[1]/a/@href').extract_first().strip().split('=', 1)[-1])
+            m_name = measurement_row.xpath('td[1]/a/b/text()').extract_first().strip()
+            m_description = measurement_row.xpath('td[2]/text()').extract_first().strip()
+            print('Measurement:', m_id, m_name, m_description, c_id)
+            self.measurment_ids.append(m_id)
+            yield Measurement(id=m_id, name=m_name, description=m_description, measurement_category_id=c_id)
 
 
     def parse_agency(self, response):
@@ -117,6 +130,7 @@ class CEOSDBSpider(scrapy.Spider):
         country = response.xpath('//*[@id="lblAgencyCountry"]/text()').extract_first(default='').strip()
         website = response.xpath('//*[@id="lblAgencyURL"]/a/@href').extract_first(default='').strip()
         if agency:
+            print('Agency:', agency, agency_id, country, website)
             yield Agency(id=agency_id, name=agency, country=country, website=website)
 
     def prepare_missions(self, response):
@@ -170,8 +184,6 @@ class CEOSDBSpider(scrapy.Spider):
         orbit_longitude = response.xpath('//*[@id="lblOrbitLongitude"]/text()').extract_first(default='').strip()
         orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
         repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
-
-        # TODO: Save measurements of mission (and which instrument does each measurement?)
 
         # Debug information
         print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
@@ -259,16 +271,29 @@ class CEOSDBSpider(scrapy.Spider):
             if mission_id not in missions and mission_id in self.mission_ids:
                 missions.append(mission_id)
 
-        # TODO: Measurements!!
+        # Measurements
+        measurements = []
+        measurement_links = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/@href')
+        for link in measurement_links.extract():
+            m_id = int(link.strip().split('=', 1)[-1])
+            if m_id not in self.measurment_ids:
+                m_name = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/text()')\
+                    .extract_first().strip()
+                self.measurment_ids.append(m_id)
+                yield Measurement(id=m_id, name=m_name, description='', measurement_category_id=1000)
+            measurements.append(m_id)
+
         # TODO: Summaries!!
         # TODO: Frequencies!!
 
         # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
-              geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions)
+              geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions,
+              measurements)
 
         # Send Instrument information to pipelines
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
                          agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
                          technology=technology, sampling=sampling, data_access=data_access, data_format=data_format,
-                         measurements_and_applications=measurements_and_applications, missions=missions)
+                         measurements_and_applications=measurements_and_applications, missions=missions,
+                         measurements=measurements)
