@@ -169,6 +169,12 @@ class Instrument(DeclarativeBase):
                                              'No Access', name='data_access_values'), nullable=True)
     data_format = Column('data_format', String, nullable=True)
     measurements_and_applications = Column('measurements_and_applications', String, nullable=True)
+    resolution_summary = Column('resolution_summary', String, nullable=True)
+    best_resolution = Column('best_resolution', String, nullable=True)
+    swath_summary = Column('swath_summary', String, nullable=True)
+    max_swath = Column('max_swath', String, nullable=True)
+    accuracy_summary = Column('accuracy_summary', String, nullable=True)
+    waveband_summary = Column('waveband_summary', String, nullable=True)
 
     agencies = relationship('Agency', secondary=designers_table, back_populates='instruments')
     types = relationship('InstrumentType', secondary=type_of_instrument_table, back_populates='instruments')

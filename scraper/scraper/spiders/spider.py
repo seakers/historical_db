@@ -283,17 +283,43 @@ class CEOSDBSpider(scrapy.Spider):
                 yield Measurement(id=m_id, name=m_name, description='', measurement_category_id=1000)
             measurements.append(m_id)
 
-        # TODO: Summaries!!
+        # Summaries
+        resolution_summary = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/text()').extract_first(default='').strip()
+        if resolution_summary == '':
+            resolution_summary = None
+        best_resolution = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/i/text()').extract_first(default='').strip()
+        if best_resolution == '':
+            best_resolution = None
+        else:
+            best_resolution = best_resolution[1:-1].split(':', 1)[-1].strip()
+        swath_summary = response.xpath('//*[@id="lblInstrumentSwathSummary"]/text()').extract_first(default='').strip()
+        if swath_summary == '':
+            swath_summary = None
+        max_swath = response.xpath('//*[@id="lblInstrumentSwathSummary"]/i/text()').extract_first(default='').strip()
+        if max_swath == '':
+            max_swath = None
+        else:
+            max_swath = max_swath[1:-1].split(':', 1)[-1].strip()
+        accuracy_summary = response.xpath('//*[@id="lblInstrumentAccuracySummary"]/text()').extract_first(default='').strip()
+        if accuracy_summary == '':
+            accuracy_summary = None
+        waveband_summary = response.xpath('//*[@id="lblInstrumentWavebandSummary"]/text()').extract_first(default='').strip()
+        if waveband_summary == '':
+            waveband_summary = None
+
         # TODO: Frequencies!!
 
         # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
               geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions,
-              measurements)
+              measurements, resolution_summary, best_resolution, swath_summary, max_swath, accuracy_summary,
+              waveband_summary)
 
         # Send Instrument information to pipelines
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
                          agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
                          technology=technology, sampling=sampling, data_access=data_access, data_format=data_format,
                          measurements_and_applications=measurements_and_applications, missions=missions,
-                         measurements=measurements)
+                         measurements=measurements, resolution_summary=resolution_summary,
+                         best_resolution=best_resolution, swath_summary=swath_summary, max_swath=max_swath,
+                         accuracy_summary=accuracy_summary, waveband_summary=waveband_summary)

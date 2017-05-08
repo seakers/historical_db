@@ -102,7 +102,11 @@ class DatabasePipeline(object):
             db_object = Instrument(id=item['id'], name=item['name'], full_name=item['full_name'], status=item['status'],
                                    maturity=item['maturity'], technology=item['technology'], sampling=item['sampling'],
                                    data_access=item['data_access'], data_format=item['data_format'],
-                                   measurements_and_applications=item['measurements_and_applications'])
+                                   measurements_and_applications=item['measurements_and_applications'],
+                                   resolution_summary=item['resolution_summary'],
+                                   best_resolution=item['best_resolution'], swath_summary=item['swath_summary'],
+                                   max_swath=item['max_swath'], accuracy_summary=item['accuracy_summary'],
+                                   waveband_summary=item['waveband_summary'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
                 db_object.agencies.append(agency)
@@ -234,6 +238,18 @@ class OntologyPipeline(object):
                 self.g.add((instrument, CEOSDB_schema.isInMission, URIRef("http://ceosdb/mission#" + str(mission_id))))
             for measurement_id in item['measurements']:
                 self.g.add((instrument, CEOSDB_schema.isInMission, URIRef("http://ceosdb/measurement#" + str(measurement_id))))
+            if item['resolution_summary'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasResolutionSummary, Literal(item['resolution_summary'])))
+            if item['best_resolution'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasBestResolution, Literal(item['best_resolution'])))
+            if item['swath_summary'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasSwathSummary, Literal(item['swath_summary'])))
+            if item['max_swath'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasMaxSwath, Literal(item['max_swath'])))
+            if item['accuracy_summary'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasAccuracySummary, Literal(item['accuracy_summary'])))
+            if item['waveband_summary'] is not None:
+                self.g.add((instrument, CEOSDB_schema.hasWavebandSummary, Literal(item['waveband_summary'])))
         return item
 
     def close_spider(self, spider):
