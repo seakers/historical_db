@@ -51,6 +51,27 @@ class CEOSDBSpider(scrapy.Spider):
                              'TBD'
                              ]
 
+    wavebands = [('UV', '~0.01 µm - ~0.40 µm'),
+                 ('VIS', '~0.40 µm - ~0.75 µm'),
+                 ('NIR', '~0.75 µm - ~1.3 µm'),
+                 ('SWIR', '~1.3 µm - ~3.0 µm'),
+                 ('MWIR', '~3.0 µm - ~6.0 µm'),
+                 ('TIR', '~6.0 µm - ~15.0 µm'),
+                 ('FIR', '~15.0 µm - ~0.1 cm'),
+                 ('MW', '~1.0 cm - ~100 cm'),
+                 ('W-Band', '94 GHz'),
+                 ('Ka-Band', '40 - 26.5 GHz'),
+                 ('K-Band', '26.5 - 18 GHz'),
+                 ('Ku-Band', '18 - 12.5 GHz'),
+                 ('X-Band', '12.5 - 8 GHz'),
+                 ('C-Band', '8 - 4 GHz'),
+                 ('S-Band', '4 - 2 GHz'),
+                 ('L-Band', '2 - 1 GHz'),
+                 ('P-Band', '0.999 - 0.2998 GHz'),
+                 ('TBD', ''),
+                 ('N/A', '')
+ ]
+
     mission_ids = []
     measurment_ids = []
 
@@ -307,13 +328,19 @@ class CEOSDBSpider(scrapy.Spider):
         if waveband_summary == '':
             waveband_summary = None
 
-        # TODO: Frequencies!!
+        # Frequencies
+        wavebands = []
+        waveband_list = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[14]/td[2]/i/table/tr/td/text()').extract()
+        for waveband in waveband_list:
+            w_name = waveband.split('(', 1)[0].strip()
+            if w_name != '':
+                wavebands.append(w_name)
 
         # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
               geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions,
               measurements, resolution_summary, best_resolution, swath_summary, max_swath, accuracy_summary,
-              waveband_summary)
+              waveband_summary, wavebands)
 
         # Send Instrument information to pipelines
         yield Instrument(id=instrument_id, name=instrument_name, full_name=instrument_fullname,
@@ -322,4 +349,4 @@ class CEOSDBSpider(scrapy.Spider):
                          measurements_and_applications=measurements_and_applications, missions=missions,
                          measurements=measurements, resolution_summary=resolution_summary,
                          best_resolution=best_resolution, swath_summary=swath_summary, max_swath=max_swath,
-                         accuracy_summary=accuracy_summary, waveband_summary=waveband_summary)
+                         accuracy_summary=accuracy_summary, waveband_summary=waveband_summary, wavebands=wavebands)

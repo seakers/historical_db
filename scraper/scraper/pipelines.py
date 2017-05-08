@@ -8,7 +8,7 @@
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
 from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
-    Agency, Mission, InstrumentType, GeometryType, Instrument, db_connect, create_tables
+    Agency, Mission, InstrumentType, GeometryType, Waveband, Instrument, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
@@ -34,6 +34,11 @@ class DatabasePipeline(object):
         for geometry in geometries:
             geometry_type = GeometryType(name=geometry)
             session.add(geometry_type)
+
+    def fill_wavebands(self, session, wavebands):
+        for waveband_t in wavebands:
+            waveband = Waveband(name=waveband_t[0], wavelengths=waveband_t[1])
+            session.add(waveband)
 
     def add_measurement_category(self, session):
         broad_other = BroadMeasurementCategory(id=1000, name='Other', description='Other')
@@ -61,8 +66,11 @@ class DatabasePipeline(object):
                 session.delete(instrument_type)
             for geometry_type in session.query(GeometryType):
                 session.delete(geometry_type)
+            for waveband in session.query(Waveband):
+                session.delete(waveband)
             self.fill_instrument_types(session, spider.instrument_types)
             self.fill_geometry_types(session, spider.instrument_geometries)
+            self.fill_wavebands(session, spider.wavebands)
             self.add_measurement_category(session)
             session.commit()
         except:
@@ -122,6 +130,9 @@ class DatabasePipeline(object):
             for measurement_id in item['measurements']:
                 measurement = session.query(Measurement).get(measurement_id)
                 db_object.measurements.append(measurement)
+            for waveband in item['wavebands']:
+                instrument_waveband = session.query(Waveband).filter(Waveband.name == waveband).first()
+                db_object.wavebands.append(instrument_waveband)
         else:
             db_object = None
 
@@ -250,6 +261,8 @@ class OntologyPipeline(object):
                 self.g.add((instrument, CEOSDB_schema.hasAccuracySummary, Literal(item['accuracy_summary'])))
             if item['waveband_summary'] is not None:
                 self.g.add((instrument, CEOSDB_schema.hasWavebandSummary, Literal(item['waveband_summary'])))
+            for waveband in item['wavebands']:
+                self.g.add((instrument, CEOSDB_schema.hasWaveband, Literal(waveband)))
         return item
 
     def close_spider(self, spider):

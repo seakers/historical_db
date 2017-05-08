@@ -82,3 +82,4 @@ class Instrument(Item):
     max_swath = Field()
     accuracy_summary = Field()
     waveband_summary = Field()
+    wavebands = Field()

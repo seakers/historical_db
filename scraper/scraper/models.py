@@ -46,6 +46,9 @@ measurements_of_instrument_table = Table('measurements_of_instrument', Declarati
                                          Column('instrument_id', Integer, ForeignKey('instruments.id')),
                                          Column('measurement_id', Integer, ForeignKey('measurements.id')))
 
+instrument_wavebands_table = Table('instrument_wavebands', DeclarativeBase.metadata,
+                                     Column('instrument_id', Integer, ForeignKey('instruments.id')),
+                                     Column('waveband_id', Integer, ForeignKey('wavebands.id')))
 
 class BroadMeasurementCategory(DeclarativeBase):
     """Sqlalchemy broad measurement categories model"""
@@ -137,6 +140,15 @@ class GeometryType(DeclarativeBase):
 
     instruments = relationship('Instrument', secondary=geometry_of_instrument_table, back_populates='geometries')
 
+class Waveband(DeclarativeBase):
+    """Sqlalchemy wavebands model"""
+    __tablename__ = 'wavebands'
+
+    id = Column(Integer, primary_key=True)
+    name = Column('name', String)
+    wavelengths = Column('wavelengths', String, nullable=True)
+
+    instruments = relationship('Instrument', secondary=instrument_wavebands_table, back_populates='wavebands')
 
 class Instrument(DeclarativeBase):
     """Sqlalchemy instruments model"""
@@ -181,3 +193,4 @@ class Instrument(DeclarativeBase):
     geometries = relationship('GeometryType', secondary=geometry_of_instrument_table, back_populates='instruments')
     missions = relationship('Mission', secondary=instruments_in_mission_table, back_populates='instruments')
     measurements = relationship('Measurement', secondary=measurements_of_instrument_table, back_populates='instruments')
+    wavebands = relationship('Waveband', secondary=instrument_wavebands_table, back_populates='instruments')
