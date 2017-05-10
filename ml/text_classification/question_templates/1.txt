@@ -1,7 +1,5 @@
-measurement measurement
-year1 year
-year2 year
+20
 --
-which instruments do we currently use to measure ${measurement}
-which instruments can measure ${measurement}
-which instruments can measure ${measurement} between ${year1} and ${year2}
+measurement measurement
+--
+which missions do we currently use to measure ${measurement}

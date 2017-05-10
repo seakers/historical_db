@@ -1,51 +1,23 @@
 import numpy as np
-import re
 import os
 import string
-from nltk.corpus import stopwords as sw
-from nltk.corpus import wordnet as wn
-from nltk import wordpunct_tokenize
-from nltk import WordNetLemmatizer
-from nltk import sent_tokenize
-from nltk import pos_tag
+import spacy
 
-stopwords = set(sw.words('english'))
-punctuation = set(string.punctuation)
-lemmatizer = WordNetLemmatizer()
+nlp = spacy.load('en')
 
 def clean_str(line):
-    # Break the sentence into part of speech tagged tokens
-    tokens =[]
-    for token, tag in pos_tag(wordpunct_tokenize(line)):
-        # Apply preprocessing to the token
-        token = token.lower()
-        token = token.strip()
-        token = token.strip('_')
-        token = token.strip('*')
+    doc = nlp(line)
+    # Pre-process the strings
+    tokens = []
+    for token in doc:
 
-        # If stopword, ignore token and continue
-        if token in stopwords:
-            continue
-
-        # If punctuation, ignore token and continue
-        if all(char in punctuation for char in token):
+        # If stopword or punctuation, ignore token and continue
+        if token.is_stop or token.is_punct:
             continue
 
         # Lemmatize the token and yield
-        lemma = lemmatize(token, tag)
-        tokens.append(lemma)
+        tokens.append(token.lemma_)
     return " ".join(tokens)
-
-def lemmatize(token, tag):
-    tag = {
-        'N': wn.NOUN,
-        'V': wn.VERB,
-        'R': wn.ADV,
-        'J': wn.ADJ
-    }.get(tag[0], wn.NOUN)
-
-    return lemmatizer.lemmatize(token, tag)
-
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """

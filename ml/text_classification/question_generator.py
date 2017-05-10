@@ -5,9 +5,6 @@ from sqlalchemy.orm import sessionmaker
 from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
     Agency, Mission, InstrumentType, GeometryType, Waveband, Instrument, db_connect, create_tables
 
-# parameters
-NUM_QUESTIONS_PER_CLASS = 1000
-
 # Connect to the database to retrieve names
 engine = db_connect()
 Session = sessionmaker(bind=engine)
@@ -30,27 +27,32 @@ for filename in os.listdir('./question_templates'):
     question_class = int(filename.split('.', 1)[0])
     parameter_map = {}
     template_lines = []
+    num_questions = 0
     session = Session()
 
     with open('./question_templates/' + filename, 'r') as file:
-        separator = False
+        state = 1
         for line in file:
-            if separator:
-                # Add to list of templates
-                template_lines.append(Template(line[:-1]))
+            if line == '--\n':
+                state += 1
             else:
-                # Add to list of variables
-                if line == '--\n':
-                    separator = True
-                else:
+                if state == 1:
+                    # Set number of questions
+                    num_questions = int(line[:-1])
+                elif state == 2:
+                    # Add to list of variables
                     line_info = line.split()
                     parameter_map[line_info[0]] = line_info[1]
+                elif state == 3:
+                    # Add to list of templates
+                    template_lines.append(Template(line[:-1]))
+
 
     # Start generating random questions
     if not os.path.exists('./data'):
         os.makedirs('./data')
     with open('./data/' + filename, 'w') as file:
-        for i in range(1, NUM_QUESTIONS_PER_CLASS+1):
+        for i in range(1, num_questions+1):
             # Generate a set of parameters
             params = {}
             for param, type in parameter_map.items():

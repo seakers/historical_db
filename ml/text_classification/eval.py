@@ -11,7 +11,7 @@ import csv
 # ==================================================
 
 # Eval Parameters
-tf.flags.DEFINE_string("checkpoint_dir", "./runs/model/checkpoints/", "Checkpoint directory from training run")
+tf.flags.DEFINE_string("checkpoint_dir", "./runs/1494451825/checkpoints/", "Checkpoint directory from training run")
 
 # Misc Parameters
 tf.flags.DEFINE_boolean("allow_soft_placement", True, "Allow device soft device placement")
@@ -31,7 +31,7 @@ cleaned_question = data_helpers.clean_str(question)
 # Map data into vocabulary
 vocab_path = os.path.join(FLAGS.checkpoint_dir, "..", "vocab")
 vocab_processor = learn.preprocessing.VocabularyProcessor.restore(vocab_path)
-x_test = np.array(list(vocab_processor.transform(cleaned_question)))
+x_test = np.array(list(vocab_processor.transform([cleaned_question])))
 
 print("\nEvaluating...\n")
 
