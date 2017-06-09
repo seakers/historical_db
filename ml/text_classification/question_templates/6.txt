@@ -1,0 +1,6 @@
+100
+--
+technology technology
+--
+which orbit is the most common for ${technology}
+which orbit is the most typical for ${technology}

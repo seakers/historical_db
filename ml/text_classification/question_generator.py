@@ -2,24 +2,35 @@ from string import Template
 import os
 import random
 from sqlalchemy.orm import sessionmaker
-from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
-    Agency, Mission, InstrumentType, GeometryType, Waveband, Instrument, db_connect, create_tables
+import scraper.models as models
 
 # Connect to the database to retrieve names
-engine = db_connect()
+engine = models.db_connect()
 Session = sessionmaker(bind=engine)
 
 # Define template substitutions depending on the type
 substitutions = dict()
 
 def subs_measurement(session):
-    measurements = session.query(Measurement).all()
+    measurements = session.query(models.Measurement).all()
     return random.choice(measurements).name
+
+def subs_technology(session):
+    technologies = list(models.technologies)
+    for type in session.query(models.InstrumentType).all():
+        technologies.append(type.name)
+    return random.choice(technologies)
+
+def subs_mission(session):
+    missions = session.query(models.Mission).all()
+    return random.choice(missions).name
 
 def subs_year(session):
     return random.randrange(1965, 2055)
 
 substitutions['measurement'] = subs_measurement
+substitutions['technology'] = subs_technology
+substitutions['mission'] = subs_mission
 substitutions['year'] = subs_year
 
 # Iterate over all types of questions
