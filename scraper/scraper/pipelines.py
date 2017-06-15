@@ -100,9 +100,15 @@ class DatabasePipeline(object):
                                 launch_date=item['launch_date'], eol_date=item['eol_date'],
                                 applications=item['applications'], orbit_type=item['orbit_type'],
                                 orbit_period=item['orbit_period'], orbit_sense=item['orbit_sense'],
-                                orbit_inclination=item['orbit_inclination'], orbit_altitude=item['orbit_altitude'],
+                                orbit_inclination=item['orbit_inclination'],
+                                orbit_inclination_num=item['orbit_inclination_num'],
+                                orbit_inclination_class=item['orbit_inclination_class'],
+                                orbit_altitude=item['orbit_altitude'],
+                                orbit_altitude_num=item['orbit_altitude_num'],
+                                orbit_altitude_class=item['orbit_altitude_class'],
                                 orbit_longitude=item['orbit_longitude'], orbit_LST=item['orbit_LST'],
-                                repeat_cycle=item['repeat_cycle'])
+                                repeat_cycle=item['repeat_cycle'], repeat_cycle_num=item['repeat_cycle_num'],
+                                repeat_cycle_class=item['repeat_cycle_class'])
             for agency_id in item['agencies']:
                 agency = session.query(Agency).get(agency_id)
                 db_object.agencies.append(agency)

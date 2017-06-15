@@ -200,16 +200,63 @@ class CEOSDBSpider(scrapy.Spider):
         orbit_type = response.xpath('//*[@id="lblOrbitType"]/text()').extract_first(default='').strip()
         orbit_period = response.xpath('//*[@id="lblOrbitPeriod"]/text()').extract_first(default='').strip()
         orbit_sense = response.xpath('//*[@id="lblOrbitSense"]/text()').extract_first(default='').strip()
+
         orbit_inclination = response.xpath('//*[@id="lblOrbitInclination"]/text()').extract_first(default='').strip()
+        if orbit_inclination == '':
+            orbit_inclination = None
+            orbit_inclination_num = None
+            orbit_inclination_class = None
+        else:
+            orbit_inclination_num = float(orbit_inclination[:-4])
+            if orbit_inclination_num == 0.0:
+                orbit_inclination_class = 'Equatorial'
+            elif orbit_inclination_num < 30.0:
+                orbit_inclination_class = 'Near Equatorial'
+            elif orbit_inclination_num < 60.0:
+                orbit_inclination_class = 'Mid Latitude'
+            elif orbit_inclination_num == 90.0:
+                orbit_inclination_class = 'Polar'
+            else:
+                orbit_inclination_class = 'Near Polar'
+
         orbit_altitude = response.xpath('//*[@id="lblOrbitAltitude"]/text()').extract_first(default='').strip()
+        if orbit_altitude == '':
+            orbit_altitude = None
+            orbit_altitude_num = None
+            orbit_altitude_class = None
+        else:
+            orbit_altitude_num = int(orbit_altitude[:-3])
+            if orbit_altitude_num < 400:
+                orbit_altitude_class = 'VL'
+            elif orbit_altitude_num < 550:
+                orbit_altitude_class = 'L'
+            elif orbit_altitude_num < 700:
+                orbit_altitude_class = 'M'
+            elif orbit_altitude_num < 850:
+                orbit_altitude_class = 'H'
+            else:
+                orbit_altitude_class = 'VH'
+
         orbit_longitude = response.xpath('//*[@id="lblOrbitLongitude"]/text()').extract_first(default='').strip()
         orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
+
         repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
+        if repeat_cycle == '':
+            repeat_cycle = None
+            repeat_cycle_num = None
+            repeat_cycle_class = None
+        else:
+            repeat_cycle_num = float(repeat_cycle[:-5])
+            if repeat_cycle_num <= 7:
+                repeat_cycle_class = 'Short'
+            else:
+                repeat_cycle_class = 'Long'
 
         # Debug information
-        print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date, applications,
-              orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_altitude, orbit_longitude, orbit_LST,
-              repeat_cycle)
+        print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date,
+              applications, orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_inclination_num,
+              orbit_inclination_class, orbit_altitude, orbit_altitude_num, orbit_altitude_class, orbit_longitude,
+              orbit_LST, repeat_cycle, repeat_cycle_num, repeat_cycle_class)
 
         # Save information for later
         self.mission_ids.append(int(mission_id))
@@ -218,8 +265,11 @@ class CEOSDBSpider(scrapy.Spider):
         yield Mission(id=mission_id, name=mission_name, full_name=mission_fullname, agencies=agency_ids,
                       status=status, launch_date=launch_date, eol_date=eol_date, applications=applications,
                       orbit_type=orbit_type, orbit_period=orbit_period, orbit_sense=orbit_sense,
-                      orbit_inclination=orbit_inclination, orbit_altitude=orbit_altitude,
-                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, repeat_cycle=repeat_cycle)
+                      orbit_inclination=orbit_inclination, orbit_inclination_num=orbit_inclination_num,
+                      orbit_inclination_class=orbit_inclination_class, orbit_altitude=orbit_altitude,
+                      orbit_altitude_num=orbit_altitude_num, orbit_altitude_class=orbit_altitude_class,
+                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, repeat_cycle=repeat_cycle,
+                      repeat_cycle_num=repeat_cycle_num, repeat_cycle_class=repeat_cycle_class)
 
     def prepare_instruments(self, response):
         sel = scrapy.Selector(response)

@@ -53,10 +53,16 @@ class Mission(Item):
     orbit_period = Field()
     orbit_sense = Field()
     orbit_inclination = Field()
+    orbit_inclination_num = Field()
+    orbit_inclination_class = Field()
     orbit_altitude = Field()
+    orbit_altitude_num = Field()
+    orbit_altitude_class = Field()
     orbit_longitude = Field()
     orbit_LST = Field()
     repeat_cycle = Field()
+    repeat_cycle_num = Field()
+    repeat_cycle_class = Field()
 
 
 class Instrument(Item):
