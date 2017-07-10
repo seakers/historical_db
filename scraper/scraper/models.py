@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Enum, ForeignKey, Table, CheckConstraint
+from sqlalchemy import create_engine, Column, Integer, Float, String, DateTime, Time, Enum, ForeignKey, Table, \
+    CheckConstraint
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.engine.url import URL
@@ -138,6 +139,9 @@ class Mission(DeclarativeBase):
         "orbit_altitude_class IN ('VL', 'L', 'M', 'H', 'VH')"), nullable=True)
     orbit_longitude = Column('orbit_longitude', String, nullable=True)
     orbit_LST = Column('orbit_lst', String, nullable=True)
+    orbit_LST_time = Column('orbit_lst_time', Time, nullable=True)
+    orbit_LST_class = Column('orbit_lst_class', String, CheckConstraint(
+        "orbit_lst_class IN ('DD', 'AM', 'Noon', 'PM')"), nullable=True)
     repeat_cycle = Column('repeat_cycle', String, nullable=True)
     repeat_cycle_num = Column('repeat_cycle_num', Float, nullable=True)
     repeat_cycle_class = Column('repeat_cycle_class', String, CheckConstraint(
@@ -166,6 +170,7 @@ class GeometryType(DeclarativeBase):
 
     instruments = relationship('Instrument', secondary=geometry_of_instrument_table, back_populates='geometries')
 
+
 class Waveband(DeclarativeBase):
     """Sqlalchemy wavebands model"""
     __tablename__ = 'wavebands'
@@ -176,6 +181,7 @@ class Waveband(DeclarativeBase):
 
     instruments = relationship('Instrument', secondary=instrument_wavebands_table, back_populates='wavebands')
 
+
 class Instrument(DeclarativeBase):
     """Sqlalchemy instruments model"""
     __tablename__ = 'instruments'
@@ -185,7 +191,7 @@ class Instrument(DeclarativeBase):
     full_name = Column('full_name', String, nullable=True)
     status = Column('status', String)
     maturity = Column('maturity', String, nullable=True)
-    technology = Column('technology', String, CheckConstraint("technology IN ('" +  "', '".join(technologies) + "')"),
+    technology = Column('technology', String, CheckConstraint("technology IN ('" + "', '".join(technologies) + "')"),
                         nullable=True)
     sampling = Column('sampling', String, CheckConstraint("sampling IN ('Imaging', 'Sounding', 'Other', 'TBD')"))
     data_access = Column('data_access', String, CheckConstraint(
@@ -205,3 +211,21 @@ class Instrument(DeclarativeBase):
     missions = relationship('Mission', secondary=instruments_in_mission_table, back_populates='instruments')
     measurements = relationship('Measurement', secondary=measurements_of_instrument_table, back_populates='instruments')
     wavebands = relationship('Waveband', secondary=instrument_wavebands_table, back_populates='instruments')
+
+
+class TechTypeMostCommonOrbit(DeclarativeBase):
+    """Sqlalchemy TechTypeMostCommonOrbit model"""
+    __tablename__ = 'techtype_most_common_orbits'
+
+    id = Column(Integer, primary_key=True)
+    techtype = Column('techype', String)
+    orbit = Column('orbit', String, nullable=True)
+
+
+class MeasurementMostCommonOrbit(DeclarativeBase):
+    """Sqlalchemy MeasurementMostCommonOrbit model"""
+    __tablename__ = 'measurement_most_common_orbits'
+
+    id = Column(Integer, primary_key=True)
+    measurement = Column('measurement', String)
+    orbit = Column('orbit', String, nullable=True)

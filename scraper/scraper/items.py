@@ -60,6 +60,8 @@ class Mission(Item):
     orbit_altitude_class = Field()
     orbit_longitude = Field()
     orbit_LST = Field()
+    orbit_LST_time = Field()
+    orbit_LST_class = Field()
     repeat_cycle = Field()
     repeat_cycle_num = Field()
     repeat_cycle_class = Field()

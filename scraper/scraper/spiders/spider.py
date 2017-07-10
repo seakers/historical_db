@@ -239,6 +239,43 @@ class CEOSDBSpider(scrapy.Spider):
 
         orbit_longitude = response.xpath('//*[@id="lblOrbitLongitude"]/text()').extract_first(default='').strip()
         orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
+        if orbit_LST == '':
+            orbit_LST = None
+            orbit_LST_time = None
+            orbit_LST_class = None
+        else:
+            orbit_LST_time = dateparser.parse(orbit_LST)
+            if orbit_LST_time is not None:
+                orbit_LST_time = orbit_LST_time.time()
+                five_am = datetime.time(5)
+                seven_am = datetime.time(7)
+                five_pm = datetime.time(17)
+                seven_pm = datetime.time(19)
+                noon_am = datetime.time(11, 15)
+                noon_pm = datetime.time(12, 45)
+                time_for_class = orbit_LST_time
+                if time_for_class < five_am:
+                    time_for_class = (datetime.datetime.combine(datetime.date.today(), time_for_class) +
+                                      datetime.timedelta(hours=12)).time()
+                elif time_for_class > seven_pm:
+                    time_for_class = (datetime.datetime.combine(datetime.date.today(), time_for_class) -
+                                      datetime.timedelta(hours=12)).time()
+
+                orbit_LST_class = None
+                if time_for_class > five_am and time_for_class < seven_am:
+                    orbit_LST_class = 'DD'
+                elif time_for_class > five_pm and time_for_class < seven_pm:
+                    orbit_LST_class = 'DD'
+                elif time_for_class > noon_am and time_for_class < noon_pm:
+                    orbit_LST_class = 'Noon'
+                elif time_for_class > seven_am and time_for_class < noon_am:
+                    orbit_LST_class = 'AM'
+                elif time_for_class > noon_pm and time_for_class < five_pm:
+                    orbit_LST_class = 'PM'
+            else:
+                orbit_LST_time = None
+                orbit_LST_class = None
+
 
         repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
         if repeat_cycle == '':
@@ -256,7 +293,7 @@ class CEOSDBSpider(scrapy.Spider):
         print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date,
               applications, orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_inclination_num,
               orbit_inclination_class, orbit_altitude, orbit_altitude_num, orbit_altitude_class, orbit_longitude,
-              orbit_LST, repeat_cycle, repeat_cycle_num, repeat_cycle_class)
+              orbit_LST, orbit_LST_time, orbit_LST_class, repeat_cycle, repeat_cycle_num, repeat_cycle_class)
 
         # Save information for later
         self.mission_ids.append(int(mission_id))
@@ -268,8 +305,9 @@ class CEOSDBSpider(scrapy.Spider):
                       orbit_inclination=orbit_inclination, orbit_inclination_num=orbit_inclination_num,
                       orbit_inclination_class=orbit_inclination_class, orbit_altitude=orbit_altitude,
                       orbit_altitude_num=orbit_altitude_num, orbit_altitude_class=orbit_altitude_class,
-                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, repeat_cycle=repeat_cycle,
-                      repeat_cycle_num=repeat_cycle_num, repeat_cycle_class=repeat_cycle_class)
+                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, orbit_LST_time=orbit_LST_time,
+                      orbit_LST_class=orbit_LST_class, repeat_cycle=repeat_cycle, repeat_cycle_num=repeat_cycle_num,
+                      repeat_cycle_class=repeat_cycle_class)
 
     def prepare_instruments(self, response):
         sel = scrapy.Selector(response)
