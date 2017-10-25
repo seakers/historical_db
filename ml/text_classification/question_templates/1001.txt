@@ -1,0 +1,10 @@
+500
+--
+instrument instrument
+orbit orbit
+--
+1001
+--
+Which of the designs have instrument ${instrument} assigned to orbit ${orbit}
+Highlight designs that assign instrument ${instrument} in orbit ${orbit}
+Show designs that assign instrument ${instrument} in orbit ${orbit}

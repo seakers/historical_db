@@ -98,3 +98,6 @@ ml/neural_programmer/data
 ml/neural_programmer/model
 ml/text_classification/data
 ml/text_classification/runs
+
+# mac
+*.DS_Store

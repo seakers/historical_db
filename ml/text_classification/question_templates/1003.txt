@@ -1,0 +1,11 @@
+500
+--
+instrument instrument
+orbit orbit
+number number
+--
+1003
+--
+Which of the designs use ${number} instruments in total?
+What are the designs that use total ${number} instruments
+What are the designs that assigns ${number} instruments in orbit ${orbit}?

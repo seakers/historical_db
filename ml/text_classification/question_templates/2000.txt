@@ -1,0 +1,28 @@
+What are the instruments whose peak powers are within the range 300W-500W?
+Why did this design get low science benefit score?
+Why does this design cost so much?
+Why does this architecture get such a high science benefit score?
+Why is this objective not being satisfied?
+What are the objectives that are not being satisfied?
+Why didn’t this rule get fired?
+Why was this rule fired?
+Why was this rule used in evaluating this architecture?
+What are the rules that were used to compute this metric?
+What are the objectives that are satisfied?
+How can I increase science benefit score from the current design?
+How can I reduce cost from the current design?
+What are the objectives that are not being satisfied?
+What are the objectives that could be improved?
+Evaluate this design
+Evaluate this architecture
+Can you tell me how this design can be improved
+What are the objectives that need to be improved
+Can you explain why this design gets high life cycle cost
+Why does this architecture has so low science benefit score
+Was synergy rules used in computing this attribute?
+Which instrument has the most influence on this objective score?
+Which design variable has the most influence on this subobjective score?
+Which mission costs the most?
+Which spacecraft costs the most?
+Which instrument is the most responsible for satisfying this objective?
+Which orbit is the most responsible for satisfying this objective?
