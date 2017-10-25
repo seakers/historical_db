@@ -12,12 +12,15 @@ def clean_str(line):
     for token in doc:
 
         # If stopword or punctuation, ignore token and continue
-        if token.is_stop or token.is_punct:
+        if (token.is_stop and not (token.lemma_ == "which" or token.lemma_ == "how" or token.lemma_ == "what"
+                                   or token.lemma_ == "when" or token.lemma_ == "why")) \
+                or token.is_punct:
             continue
 
         # Lemmatize the token and yield
         tokens.append(token.lemma_)
     return " ".join(tokens)
+
 
 def batch_iter(data, batch_size, num_epochs, shuffle=True):
     """
