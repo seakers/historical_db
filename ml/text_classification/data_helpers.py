@@ -44,21 +44,51 @@ def batch_iter(data, batch_size, num_epochs, shuffle=True):
 
 def load_data_and_labels(data_folder):
     # Load all the categories
-    x_text = []
-    labels = []
-    num_labels = os.listdir(data_folder)
+    general_x_text = []
+    general_labels = []
+    specific_x_texts = [[], [], [], []]
+    specific_labels = [[], [], [], []]
+
+    options_list = ["iFEED", "VASSAR", "Critic", "Historian"]
+    num_general_labels = 4
+    # Add texts and labels
+    num_specific_labels = [0, 0, 0, 0]
+    dict_specific_labels = [{}, {}, {}, {}]
     for filename in os.listdir(data_folder):
-        label = int(filename.split('.', 1)[0])
+        specific_label = int(filename.split('.', 1)[0])
         with open(data_folder + filename, 'r') as file:
+            file_labels = next(file)[:-1]
+            file_labels = [b == "1" for b in file_labels]
+            for index in range(num_general_labels):
+                if file_labels[index]:
+                    dict_specific_labels[index][specific_label] = num_specific_labels[index]
+                    num_specific_labels[index] += 1
+
+
+    for filename in os.listdir(data_folder):
+        specific_label = int(filename.split('.', 1)[0])
+        with open(data_folder + filename, 'r') as file:
+            file_general_labels = next(file)[:-1]
+            file_general_labels = [b == "1" for b in file_general_labels]
             for line in file:
                 clean_line = clean_str(line)
-                x_text.append(clean_line)
-                label_vec = [0 for i in num_labels]
-                label_vec[label] = 1
-                labels.append(label_vec)
+                # Add to general training
+                general_x_text.append(clean_line)
+                general_labels.append(file_general_labels)
 
-    y = np.array(labels)
-    return [x_text, y]
+                # Add to specific models training
+                for index in range(num_general_labels):
+                    if file_general_labels[index]:
+                        specific_x_texts[index].append(clean_line)
+                        label_vec = [0 for i in range(num_specific_labels[index])]
+                        label_vec[dict_specific_labels[index][specific_label]] = 1
+                        specific_labels[index].append(label_vec)
+
+    general_y = np.array(general_labels)
+    specific_ys = [[], [], [], []]
+    for index in range(num_general_labels):
+        specific_ys[index] = np.array(specific_labels[index])
+    return [general_x_text, general_y, specific_x_texts, specific_ys]
 
 
 def load_embedding_vectors_word2vec(vocabulary, filename, binary):

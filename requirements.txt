@@ -1,5 +1,5 @@
 dateparser==0.6.0
-psycopg2==2.7.3.1
+psycopg2==2.7.3.2
 rdflib==4.2.2
 Scrapy==1.4.0
 spacy==1.9.0

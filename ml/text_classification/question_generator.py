@@ -39,6 +39,7 @@ for filename in os.listdir('./question_templates'):
     parameter_map = {}
     template_lines = []
     num_questions = 0
+    labels = ""
     session = Session()
 
     with open('./question_templates/' + filename, 'r') as file:
@@ -56,6 +57,9 @@ for filename in os.listdir('./question_templates'):
                     parameter_map[line_info[0]] = line_info[1]
                 elif state == 3:
                     # Add to list of templates
+                    labels = line[:-1]
+                elif state == 4:
+                    # Add to list of templates
                     template_lines.append(Template(line[:-1]))
 
 
@@ -63,6 +67,7 @@ for filename in os.listdir('./question_templates'):
     if not os.path.exists('./data'):
         os.makedirs('./data')
     with open('./data/' + filename, 'w') as file:
+        file.write(labels + "\n")
         for i in range(1, num_questions+1):
             # Generate a set of parameters
             params = {}
