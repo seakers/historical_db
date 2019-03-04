@@ -344,6 +344,7 @@ class DatabasePipeline(object):
         finally:
             session.close()
 
+
 class OntologyPipeline(object):
     """Ontology pipeline for storing scraped items in an ontology"""
     def __init__(self):
