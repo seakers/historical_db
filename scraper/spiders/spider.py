@@ -79,7 +79,7 @@ class CEOSDBSpider(scrapy.Spider):
         yield scrapy.Request(url='http://database.eohandbook.com/measurements/overview.aspx',
                              callback=self.prepare_broad_categories, priority=25)
         # For agencies, do brute force requests as there is not a comprehensive list of them
-        for i in range(1, 210):
+        for i in range(1, 230):
             yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i),
                                  callback=self.parse_agency, priority=20)
         yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx',
