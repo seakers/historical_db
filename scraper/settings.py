@@ -68,7 +68,8 @@ CONCURRENT_REQUESTS = 16
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
     'scraper.pipelines.DatabasePipeline': 300,
-    'scraper.pipelines.OntologyPipeline': 400,
+    'scraper.pipelines.GraphPipeline': 400,
+    'scraper.pipelines.OntologyPipeline': 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)

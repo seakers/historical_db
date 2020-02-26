@@ -108,7 +108,7 @@ class CEOSDBSpider(scrapy.Spider):
             yield scrapy.Request(url=response.urljoin(url), callback=self.parse_broad_category, priority=24)
 
     def parse_broad_category(self, response):
-        bc_id = response.url.split('=', 1)[-1]
+        bc_id = int(response.url.split('=', 1)[-1])
         name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()')\
             .extract_first().strip()[2:]
         description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()')\
@@ -123,7 +123,7 @@ class CEOSDBSpider(scrapy.Spider):
             yield scrapy.Request(url=response.urljoin(category_link), callback=self.parse_category, priority=23)
 
     def parse_category(self, response):
-        c_id = response.url.split('=', 1)[-1]
+        c_id = int(response.url.split('=', 1)[-1])
         name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()') \
                        .extract()[2].strip()
         description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()') \
@@ -147,7 +147,7 @@ class CEOSDBSpider(scrapy.Spider):
 
     def parse_agency(self, response):
         agency = response.xpath('//*[@id="lblAgencyNameAbbr"]/text()').extract_first(default='').strip()[2:]
-        agency_id = response.url.split('=', 1)[-1]
+        agency_id = int(response.url.split('=', 1)[-1])
         country = response.xpath('//*[@id="lblAgencyCountry"]/text()').extract_first(default='').strip()
         website = response.xpath('//*[@id="lblAgencyURL"]/a/@href').extract_first(default='').strip()
         if agency:
@@ -178,7 +178,7 @@ class CEOSDBSpider(scrapy.Spider):
 
         # Basic mission information
         mission_name = response.xpath('//*[@id="lblMissionNameShort"]/text()').extract_first().strip()[2:]
-        mission_id = response.url.split('=', 1)[-1]
+        mission_id = int(response.url.split('=', 1)[-1])
         mission_fullname = response.xpath('//*[@id="lblMissionNameFull"]/text()').extract_first(default='').strip()
         if not mission_fullname:
             mission_fullname = None
@@ -296,7 +296,7 @@ class CEOSDBSpider(scrapy.Spider):
               orbit_LST, orbit_LST_time, orbit_LST_class, repeat_cycle, repeat_cycle_num, repeat_cycle_class)
 
         # Save information for later
-        self.mission_ids.append(int(mission_id))
+        self.mission_ids.append(mission_id)
 
         # Send mission information to pipelines
         yield Mission(id=mission_id, name=mission_name, full_name=mission_fullname, agencies=agency_ids,
@@ -331,7 +331,7 @@ class CEOSDBSpider(scrapy.Spider):
     def parse_instrument(self, response):
         # Basic instrument information
         instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
-        instrument_id = response.url.split('=', 1)[-1]
+        instrument_id = int(response.url.split('=', 1)[-1])
         instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
         if not instrument_fullname:
             instrument_fullname = None

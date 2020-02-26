@@ -4,6 +4,7 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
+from neo4j import GraphDatabase
 
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
@@ -14,6 +15,7 @@ from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measur
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
+import cypher_tx
 
 
 class DatabasePipeline(object):
@@ -218,7 +220,6 @@ class DatabasePipeline(object):
             print(measurement.name, most_common_orbit)
             session.add(meas_mco)
 
-
     def open_spider(self, spider):
         session = self.Session()
 
@@ -345,6 +346,54 @@ class DatabasePipeline(object):
             session.close()
 
 
+class GraphPipeline(object):
+    """Neo4J pipeline for storing scraped items in a graph database"""
+
+    def __init__(self):
+        """
+        Initializes Bolt connection to Neo4J
+        """
+        uri = "bolt://localhost:7687"
+        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "test"))
+
+    def open_spider(self, spider):
+        with self.driver.session() as session:
+            summary = session.write_transaction(cypher_tx.delete_all_graph)
+            print(summary.counters)
+
+    def process_item(self, item, spider):
+        """Save items in the database.
+
+        This method is called for every item pipeline component.
+
+        """
+        with self.driver.session() as session:
+            if isinstance(item, items.BroadMeasurementCategory):
+                summary = session.write_transaction(cypher_tx.add_broad_measurement_category, item)
+            elif isinstance(item, items.MeasurementCategory):
+                summary = session.write_transaction(cypher_tx.add_measurement_category, item)
+            elif isinstance(item, items.Measurement):
+                summary = session.write_transaction(cypher_tx.add_measurement, item)
+            elif isinstance(item, items.Agency):
+                summary = session.write_transaction(cypher_tx.add_agency, item)
+            elif isinstance(item, items.Mission):
+                summary = session.write_transaction(cypher_tx.add_mission, item)
+            elif isinstance(item, items.Instrument):
+                summary = session.write_transaction(cypher_tx.add_instrument, item)
+            else:
+                summary = None
+
+            if summary is not None:
+                print(summary.counters)
+            return item
+
+    def close_spider(self, spider):
+        with self.driver.session() as session:
+            pass
+            # Process the orbit data to generate most common orbit data
+            # self.compute_common_orbits(session)
+
+
 class OntologyPipeline(object):
     """Ontology pipeline for storing scraped items in an ontology"""
     def __init__(self):
@@ -371,12 +420,12 @@ class OntologyPipeline(object):
 
         """
         if isinstance(item, items.BroadMeasurementCategory):
-            bmc = URIRef("http://ceosdb/broad_category#" + item['id'])
+            bmc = URIRef("http://ceosdb/broad_category#" + str(item['id']))
             self.g.add((bmc, RDFS.label, Literal(item['name'])))
             self.g.add((bmc, RDF.type, CEOSDB_schema.measurementBroadCategoryClass))
             self.g.add((bmc, CEOSDB_schema.hasDescription, Literal(item['description'])))
         elif isinstance(item, items.MeasurementCategory):
-            mc = URIRef("http://ceosdb/category#" + item['id'])
+            mc = URIRef("http://ceosdb/category#" + str(item['id']))
             self.g.add((mc, RDFS.label, Literal(item['name'])))
             self.g.add((mc, RDF.type, CEOSDB_schema.measurementCategoryClass))
             self.g.add((mc, CEOSDB_schema.hasDescription, Literal(item['description'])))
@@ -388,13 +437,13 @@ class OntologyPipeline(object):
             self.g.add((mc, CEOSDB_schema.hasDescription, Literal(item['description'])))
             self.g.add((mc, CEOSDB_schema.hasCategory, Literal(item['measurement_category_id'])))
         elif isinstance(item, items.Agency):
-            sa = URIRef("http://ceosdb/agency#" + item['id'])
+            sa = URIRef("http://ceosdb/agency#" + str(item['id']))
             self.g.add((sa, RDFS.label, Literal(item['name'])))
             self.g.add((sa, RDF.type, CEOSDB_schema.agencyClass))
             self.g.add((sa, CEOSDB_schema.isFromCountry, Literal(item['country'])))
             self.g.add((sa, FOAF.homepage, URIRef(item['website'])))
         elif isinstance(item, items.Mission):
-            mission = URIRef("http://ceosdb/mission#" + item['id'])
+            mission = URIRef("http://ceosdb/mission#" + str(item['id']))
             self.g.add((mission, RDFS.label, Literal(item['name'])))
             self.g.add((mission, RDF.type, CEOSDB_schema.missionClass))
             if item['full_name'] is not None:
@@ -422,7 +471,7 @@ class OntologyPipeline(object):
             if item['repeat_cycle'] != '':
                 self.g.add((mission, CEOSDB_schema.hasRepeatCycle, Literal(item['repeat_cycle'])))
         elif isinstance(item, items.Instrument):
-            instrument = URIRef('http://ceosdb/instrument#' + item['id'])
+            instrument = URIRef('http://ceosdb/instrument#' + str(item['id']))
             self.g.add((instrument, RDFS.label, Literal(item['name'])))
             self.g.add((instrument, RDF.type, CEOSDB_schema.instrumentClass))
             if item['full_name'] is not None:
