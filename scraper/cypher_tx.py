@@ -1,4 +1,4 @@
-from items import MeasurementCategory, BroadMeasurementCategory, Measurement, Agency, Mission, Instrument
+from scraper.items import MeasurementCategory, BroadMeasurementCategory, Measurement, Agency, Mission, Instrument
 
 
 def delete_all_graph(tx):

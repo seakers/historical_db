@@ -5,6 +5,7 @@
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
 from neo4j import GraphDatabase
+import os
 
 import scraper.items as items
 from sqlalchemy.orm import sessionmaker
@@ -15,7 +16,7 @@ from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measur
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
-import cypher_tx
+from scraper import cypher_tx
 
 
 class DatabasePipeline(object):
@@ -353,8 +354,9 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        uri = "bolt://localhost:7687"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "test"))
+        uri = "bolt://" + os.environ['NEO4J_HOST'] + ":" + os.environ['NEO4J_PORT']
+        # Encryption messes with docker container netowrking
+        self.driver = GraphDatabase.driver(uri, auth=(os.environ['NEO4J_USER'], os.environ['NEO4J_PASSWORD']), encrypted=False)
 
     def open_spider(self, spider):
         with self.driver.session() as session:
