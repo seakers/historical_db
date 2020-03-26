@@ -369,17 +369,17 @@ class GraphPipeline(object):
         """
         with self.driver.session() as session:
             if isinstance(item, items.BroadMeasurementCategory):
-                summary = session.write_transaction(cypher_tx.add_broad_measurement_category, item)
+                summary = session.write_transaction(cypher_tx.add_broad_observable_property_category, item)
             elif isinstance(item, items.MeasurementCategory):
-                summary = session.write_transaction(cypher_tx.add_measurement_category, item)
+                summary = session.write_transaction(cypher_tx.add_observable_property_category, item)
             elif isinstance(item, items.Measurement):
-                summary = session.write_transaction(cypher_tx.add_measurement, item)
+                summary = session.write_transaction(cypher_tx.add_observable_property, item)
             elif isinstance(item, items.Agency):
                 summary = session.write_transaction(cypher_tx.add_agency, item)
             elif isinstance(item, items.Mission):
-                summary = session.write_transaction(cypher_tx.add_mission, item)
+                summary = session.write_transaction(cypher_tx.add_platform, item)
             elif isinstance(item, items.Instrument):
-                summary = session.write_transaction(cypher_tx.add_instrument, item)
+                summary = session.write_transaction(cypher_tx.add_sensor, item)
             else:
                 summary = None
 
