@@ -84,6 +84,7 @@ class Instrument(Item):
     measurements_and_applications = Field()
     missions = Field()
     measurements = Field()
+    accuracies = Field()
     resolution_summary = Field()
     best_resolution = Field()
     swath_summary = Field()

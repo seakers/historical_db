@@ -382,6 +382,7 @@ class CEOSDBSpider(scrapy.Spider):
 
         # Measurements
         measurements = []
+        accuracies = []
         measurement_links = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/@href')
         for link in measurement_links.extract():
             m_id = int(link.strip().split('=', 1)[-1])
@@ -391,6 +392,10 @@ class CEOSDBSpider(scrapy.Spider):
                 self.measurment_ids.append(m_id)
                 yield Measurement(id=m_id, name=m_name, description='', measurement_category_id=1000)
             measurements.append(m_id)
+        accuracy_infos = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr[position()>1]/td[3]/text()')
+        for accuracy_info in accuracy_infos.extract():
+            accuracy = accuracy_info.strip()
+            accuracies.append(accuracy)
 
         # Summaries
         resolution_summary = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/text()').extract_first(default='').strip()
@@ -427,7 +432,7 @@ class CEOSDBSpider(scrapy.Spider):
         # Debug information
         print('Instrument:', instrument_name, instrument_id, instrument_fullname, agency_ids, status, maturity, types,
               geometries, technology, sampling, data_access, data_format, measurements_and_applications, missions,
-              measurements, resolution_summary, best_resolution, swath_summary, max_swath, accuracy_summary,
+              measurements, accuracies, resolution_summary, best_resolution, swath_summary, max_swath, accuracy_summary,
               waveband_summary, wavebands)
 
         # Send Instrument information to pipelines
@@ -435,6 +440,6 @@ class CEOSDBSpider(scrapy.Spider):
                          agencies=agency_ids, status=status, maturity=maturity, types=types, geometries=geometries,
                          technology=technology, sampling=sampling, data_access=data_access, data_format=data_format,
                          measurements_and_applications=measurements_and_applications, missions=missions,
-                         measurements=measurements, resolution_summary=resolution_summary,
+                         measurements=measurements, accuracies=accuracies, resolution_summary=resolution_summary,
                          best_resolution=best_resolution, swath_summary=swath_summary, max_swath=max_swath,
                          accuracy_summary=accuracy_summary, waveband_summary=waveband_summary, wavebands=wavebands)
