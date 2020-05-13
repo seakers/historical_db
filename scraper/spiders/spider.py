@@ -194,6 +194,10 @@ class CEOSDBSpider(scrapy.Spider):
         eol_date = response.xpath('//*[@id="lblEOLDate"]/text()').extract_first()
         if eol_date:
             eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
+        norad_id = response.xpath('//*[@id="lblNoradNumberLink"]/a/text()').extract_first()
+        if norad_id is not None:
+            norad_id = int(norad_id)
+
         applications = response.xpath('//*[@id="lblMissionObjectivesAndApplications"]/text()').extract_first(default='').strip()
 
         # Orbit details (if existing)
@@ -291,7 +295,7 @@ class CEOSDBSpider(scrapy.Spider):
 
         # Debug information
         print('Mission:', mission_name, mission_id, mission_fullname, agency_ids, status, launch_date, eol_date,
-              applications, orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_inclination_num,
+              norad_id, applications, orbit_type, orbit_period, orbit_sense, orbit_inclination, orbit_inclination_num,
               orbit_inclination_class, orbit_altitude, orbit_altitude_num, orbit_altitude_class, orbit_longitude,
               orbit_LST, orbit_LST_time, orbit_LST_class, repeat_cycle, repeat_cycle_num, repeat_cycle_class)
 
@@ -300,14 +304,14 @@ class CEOSDBSpider(scrapy.Spider):
 
         # Send mission information to pipelines
         yield Mission(id=mission_id, name=mission_name, full_name=mission_fullname, agencies=agency_ids,
-                      status=status, launch_date=launch_date, eol_date=eol_date, applications=applications,
-                      orbit_type=orbit_type, orbit_period=orbit_period, orbit_sense=orbit_sense,
-                      orbit_inclination=orbit_inclination, orbit_inclination_num=orbit_inclination_num,
-                      orbit_inclination_class=orbit_inclination_class, orbit_altitude=orbit_altitude,
-                      orbit_altitude_num=orbit_altitude_num, orbit_altitude_class=orbit_altitude_class,
-                      orbit_longitude=orbit_longitude, orbit_LST=orbit_LST, orbit_LST_time=orbit_LST_time,
-                      orbit_LST_class=orbit_LST_class, repeat_cycle=repeat_cycle, repeat_cycle_num=repeat_cycle_num,
-                      repeat_cycle_class=repeat_cycle_class)
+                      status=status, launch_date=launch_date, eol_date=eol_date, norad_id=norad_id,
+                      applications=applications, orbit_type=orbit_type, orbit_period=orbit_period,
+                      orbit_sense=orbit_sense, orbit_inclination=orbit_inclination,
+                      orbit_inclination_num=orbit_inclination_num, orbit_inclination_class=orbit_inclination_class,
+                      orbit_altitude=orbit_altitude, orbit_altitude_num=orbit_altitude_num,
+                      orbit_altitude_class=orbit_altitude_class, orbit_longitude=orbit_longitude, orbit_LST=orbit_LST,
+                      orbit_LST_time=orbit_LST_time, orbit_LST_class=orbit_LST_class, repeat_cycle=repeat_cycle,
+                      repeat_cycle_num=repeat_cycle_num, repeat_cycle_class=repeat_cycle_class)
 
     def prepare_instruments(self, response):
         sel = scrapy.Selector(response)

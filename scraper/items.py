@@ -48,6 +48,7 @@ class Mission(Item):
     status = Field()
     launch_date = Field()
     eol_date = Field()
+    norad_id = Field()
     applications = Field()
     orbit_type = Field()
     orbit_period = Field()

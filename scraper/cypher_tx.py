@@ -32,13 +32,14 @@ def add_agency(tx, item: Agency):
 
 def add_platform(tx, item: Mission):
     summary = tx.run("CREATE (a:Platform {id: {id}, name: {name}, full_name: {full_name}, status: {status}, "
-                     "launch_date: {launch_date}, eol_date: {eol_date}, applications: {applications},"
-                     "orbit_type: {orbit_type}, orbit_period: {orbit_period}, orbit_sense: {orbit_sense},"
-                     "orbit_inclination: {orbit_inclination}, orbit_inclination_num: {orbit_inclination_num}, "
-                     "orbit_inclination_class: {orbit_inclination_class}, orbit_altitude: {orbit_altitude},"
-                     "orbit_altitude_num: {orbit_altitude_num}, orbit_altitude_class: {orbit_altitude_class},"
-                     "orbit_longitude: {orbit_longitude}, orbit_LST: {orbit_LST}, orbit_LST_time: {orbit_LST_time},"
-                     "orbit_LST_class: {orbit_LST_class}, repeat_cycle: {repeat_cycle},"
+                     "launch_date: {launch_date}, eol_date: {eol_date}, norad_id: {norad_id}, "
+                     "applications: {applications}, orbit_type: {orbit_type}, orbit_period: {orbit_period}, "
+                     "orbit_sense: {orbit_sense}, orbit_inclination: {orbit_inclination}, "
+                     "orbit_inclination_num: {orbit_inclination_num}, "
+                     "orbit_inclination_class: {orbit_inclination_class}, orbit_altitude: {orbit_altitude}, "
+                     "orbit_altitude_num: {orbit_altitude_num}, orbit_altitude_class: {orbit_altitude_class}, "
+                     "orbit_longitude: {orbit_longitude}, orbit_LST: {orbit_LST}, orbit_LST_time: {orbit_LST_time}, "
+                     "orbit_LST_class: {orbit_LST_class}, repeat_cycle: {repeat_cycle}, "
                      "repeat_cycle_num: {repeat_cycle_num}, repeat_cycle_class: {repeat_cycle_class}})", item).summary()
     for agency_id in item['agencies']:
         rel_sum = tx.run("MATCH (a:Platform), (b:Agency)"
