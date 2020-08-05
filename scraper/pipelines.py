@@ -15,7 +15,7 @@ from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measur
 from scraper.spiders import CEOSDB_schema
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
-import cypher_tx
+import scraper.cypher_tx as cypher_tx
 
 
 class DatabasePipeline(object):
@@ -54,11 +54,11 @@ class DatabasePipeline(object):
         if missions_count != 0:
             supp = float(missions_intersect_count) / missions_count
         else:
-            supp = 0.
+            return False
         if missions_param_count != 0:
             conf_param_impl_orbit = float(missions_intersect_count) / missions_param_count
         else:
-            conf_param_impl_orbit = 0.
+            return False
         return supp > 10.0/missions_count and conf_param_impl_orbit > 0.5
 
     def compute_common_orbit(self, session, param_query):
@@ -353,8 +353,8 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        uri = "bolt://localhost:7687"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "test"))
+        uri = "neo4j://neo4j:7687"
+        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "neo4j_daphne"))
 
     def open_spider(self, spider):
         with self.driver.session() as session:

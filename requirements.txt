@@ -1,5 +1,5 @@
 dateparser==0.7.2
-neo4j==1.7.6
+neo4j==4.1.0
 psycopg2-binary==2.8.4
 rdflib==4.2.2
 Scrapy==1.8.0
