@@ -4,18 +4,22 @@
 #
 # Don't forget to add your pipeline to the ITEM_PIPELINES setting
 # See: http://doc.scrapy.org/en/latest/topics/item-pipeline.html
-from neo4j import GraphDatabase
+import os
 
-import scraper.items as items
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import or_
 from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
     Agency, Mission, InstrumentType, GeometryType, Waveband, Instrument, TechTypeMostCommonOrbit, \
     MeasurementMostCommonOrbit, technologies, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
+
+from neo4j import GraphDatabase
+import scraper.cypher_tx as cypher_tx
+
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
-import scraper.cypher_tx as cypher_tx
+
+import scraper.items as items
 
 
 class DatabasePipeline(object):
@@ -353,8 +357,11 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        uri = "neo4j://neo4j:7687"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "neo4j_daphne"))
+        host = os.environ.get("NEO4J_HOST", "localhost")
+        port = os.environ.get("NEO4J_PORT", "7687")
+        password = os.environ.get("NEO4J_PASSWORD", 'test')
+        uri = f"neo4j://{host}:{port}"
+        self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
 
     def open_spider(self, spider):
         with self.driver.session() as session:
