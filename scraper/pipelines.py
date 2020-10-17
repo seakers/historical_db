@@ -7,16 +7,20 @@
 from neo4j import GraphDatabase
 import os
 
-import scraper.items as items
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import or_
 from scraper.models import BroadMeasurementCategory, MeasurementCategory, Measurement, \
     Agency, Mission, InstrumentType, GeometryType, Waveband, Instrument, TechTypeMostCommonOrbit, \
     MeasurementMostCommonOrbit, technologies, db_connect, create_tables
 from scraper.spiders import CEOSDB_schema
+
+import scraper.cypher_tx as cypher_tx
+
 from rdflib import Graph, Literal, RDF, RDFS, URIRef
 from rdflib.namespace import FOAF, OWL
 from scraper import cypher_tx
+
+import scraper.items as items
 
 
 class DatabasePipeline(object):
@@ -55,11 +59,11 @@ class DatabasePipeline(object):
         if missions_count != 0:
             supp = float(missions_intersect_count) / missions_count
         else:
-            supp = 0.
+            return False
         if missions_param_count != 0:
             conf_param_impl_orbit = float(missions_intersect_count) / missions_param_count
         else:
-            conf_param_impl_orbit = 0.
+            return False
         return supp > 10.0/missions_count and conf_param_impl_orbit > 0.5
 
     def compute_common_orbit(self, session, param_query):
@@ -354,9 +358,11 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        uri = "bolt://" + os.environ['NEO4J_HOST'] + ":" + os.environ['NEO4J_PORT']
-        # Encryption messes with docker container netowrking
-        self.driver = GraphDatabase.driver(uri, auth=(os.environ['NEO4J_USER'], os.environ['NEO4J_PASSWORD']), encrypted=False)
+        host = os.environ.get("NEO4J_HOST", "localhost")
+        port = os.environ.get("NEO4J_PORT", "7687")
+        password = os.environ.get("NEO4J_PASSWORD", 'test')
+        uri = f"neo4j://{host}:{port}"
+        self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
 
     def open_spider(self, spider):
         with self.driver.session() as session:
@@ -371,17 +377,17 @@ class GraphPipeline(object):
         """
         with self.driver.session() as session:
             if isinstance(item, items.BroadMeasurementCategory):
-                summary = session.write_transaction(cypher_tx.add_broad_measurement_category, item)
+                summary = session.write_transaction(cypher_tx.add_broad_observable_property_category, item)
             elif isinstance(item, items.MeasurementCategory):
-                summary = session.write_transaction(cypher_tx.add_measurement_category, item)
+                summary = session.write_transaction(cypher_tx.add_observable_property_category, item)
             elif isinstance(item, items.Measurement):
-                summary = session.write_transaction(cypher_tx.add_measurement, item)
+                summary = session.write_transaction(cypher_tx.add_observable_property, item)
             elif isinstance(item, items.Agency):
                 summary = session.write_transaction(cypher_tx.add_agency, item)
             elif isinstance(item, items.Mission):
-                summary = session.write_transaction(cypher_tx.add_mission, item)
+                summary = session.write_transaction(cypher_tx.add_platform, item)
             elif isinstance(item, items.Instrument):
-                summary = session.write_transaction(cypher_tx.add_instrument, item)
+                summary = session.write_transaction(cypher_tx.add_sensor, item)
             else:
                 summary = None
 
