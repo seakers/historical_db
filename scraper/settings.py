@@ -93,13 +93,13 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-# DATABASE = {
-#     'drivername': 'postgres',
-#     'host': os.environ['POSTGRES_HOST'],
-#     'port': os.environ['POSTGRES_PORT'],
-#     'username': os.environ['USER'],
-#     'password': os.environ['PASSWORD'],
-#     'database': 'daphne'
-# }
+DATABASE = {
+    'drivername': 'postgres',
+    'host': os.environ['POSTGRES_HOST'],
+    'port': os.environ['POSTGRES_PORT'],
+    'username': os.environ['USER'],
+    'password': os.environ['PASSWORD'],
+    'database': 'daphne'
+}
 
 LOG_LEVEL = 'INFO'

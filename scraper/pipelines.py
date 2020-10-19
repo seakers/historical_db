@@ -357,11 +357,14 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        host = os.environ.get("NEO4J_HOST", "localhost")
-        port = os.environ.get("NEO4J_PORT", "7687")
-        password = os.environ.get("NEO4J_PASSWORD", 'test')
-        uri = f"neo4j://{host}:{port}"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
+        # host = os.environ.get("NEO4J_HOST", "localhost")
+        # port = os.environ.get("NEO4J_PORT", "7687")
+        # password = os.environ.get("NEO4J_PASSWORD", 'test')
+        # uri = f"neo4j://{host}:{port}"
+        # self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
+        uri = "bolt://" + os.environ['NEO4J_HOST'] + ":" + os.environ['NEO4J_PORT']
+        # Encryption messes with docker container netowrking
+        self.driver = GraphDatabase.driver(uri, auth=(os.environ['NEO4J_USER'], os.environ['NEO4J_PASSWORD']), encrypted=False)
 
     def open_spider(self, spider):
         with self.driver.session() as session:

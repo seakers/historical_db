@@ -9,6 +9,19 @@ import scrapy
 from scraper.items import BroadMeasurementCategory, MeasurementCategory, Measurement, Agency, Mission, Instrument
 
 
+# Patch for gcos links in XML doc
+def remove_gcos_links(links):
+    new_links = []
+    remove_link = 'gcos.wmo.int'
+    for link in links:
+        if remove_link not in link:
+            new_links.append(link)
+    print("---> OLD LINKS", links)
+    print("---> NEW LINKS", new_links)
+    return new_links
+
+
+
 class CEOSDBSpider(scrapy.Spider):
     name = "ceosdb_scraper"
 
@@ -337,6 +350,8 @@ class CEOSDBSpider(scrapy.Spider):
         instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
         instrument_id = int(response.url.split('=', 1)[-1])
         instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
+        print('---> INSTRUMENT NAME ', instrument_name)
+        print('---> URL ', response.url)
         if not instrument_fullname:
             instrument_fullname = None
         status = response.xpath('//*[@id="lblInstrumentStatus"]/text()').extract_first().strip()
@@ -388,7 +403,9 @@ class CEOSDBSpider(scrapy.Spider):
         measurements = []
         accuracies = []
         measurement_links = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/@href')
-        for link in measurement_links.extract():
+        extracted_measurement_links = remove_gcos_links(measurement_links.extract())
+        # for link in measurement_links.extract():
+        for link in extracted_measurement_links:
             m_id = int(link.strip().split('=', 1)[-1])
             if m_id not in self.measurment_ids:
                 m_name = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/text()')\
@@ -396,10 +413,13 @@ class CEOSDBSpider(scrapy.Spider):
                 self.measurment_ids.append(m_id)
                 yield Measurement(id=m_id, name=m_name, description='', measurement_category_id=1000)
             measurements.append(m_id)
-        accuracy_infos = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr[position()>1]/td[3]/text()')
-        for accuracy_info in accuracy_infos.extract():
-            accuracy = accuracy_info.strip()
-            accuracies.append(accuracy)
+            accuracies.append('50km h-code')
+
+        # accuracy_infos = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr[position()>1]/td[3]/text()')
+        # print("----- ALL ACCURACY LINKS",  accuracy_infos.extract())
+        # for accuracy_info in accuracy_infos.extract():
+        #     accuracy = accuracy_info.strip()
+        #     accuracies.append(accuracy)
 
         # Summaries
         resolution_summary = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/text()').extract_first(default='').strip()
