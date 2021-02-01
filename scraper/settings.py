@@ -68,7 +68,7 @@ CONCURRENT_REQUESTS = 16
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
    'scraper.pipelines.DatabasePipeline': 300,
-    'scraper.pipelines.GraphPipeline': 400,
+#    'scraper.pipelines.GraphPipeline': 400,
 #    'scraper.pipelines.OntologyPipeline': 500,
 }
 
@@ -95,11 +95,11 @@ ITEM_PIPELINES = {
 
 DATABASE = {
     'drivername': 'postgres',
-    'host': os.environ['POSTGRES_HOST'],
-    'port': os.environ['POSTGRES_PORT'],
-    'username': os.environ['USER'],
-    'password': os.environ['PASSWORD'],
-    'database': 'daphne'
+    'host': 'localhost',
+    'port': '5432',
+    'username': 'postgres',
+    'password': 'postgrespassword',
+    'database': 'postgres'
 }
 
 LOG_LEVEL = 'INFO'
