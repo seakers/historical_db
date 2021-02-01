@@ -95,7 +95,7 @@ ITEM_PIPELINES = {
 
 DATABASE = {
     'drivername': 'postgres',
-    'host': '172.18.0.2',
+    'host': 'postgres',
     'port': '5432',
     'username': 'postgres',
     'password': 'postgrespassword',
