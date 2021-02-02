@@ -25,3 +25,12 @@
 4. Done!
 
 ## Machine learning
+
+
+
+
+## Docker Container
+
+1. `docker build -f Dockerfile -t apazagab/historical_db .`
+
+2. `docker push apazagab/historical_db`
