@@ -354,7 +354,7 @@ class GraphPipeline(object):
         Initializes Bolt connection to Neo4J
         """
         uri = "neo4j://neo4j:7687"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "neo4j_daphne"))
+        self.driver = GraphDatabase.driver(uri, auth=("neo4j", "test"))
 
     def open_spider(self, spider):
         with self.driver.session() as session:
