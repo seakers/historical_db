@@ -18,7 +18,7 @@ NEWSPIDER_MODULE = 'scraper.spiders'
 
 
 # Crawl responsibly by identifying yourself (and your website) on the user-agent
-USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'
+USER_AGENT = 'Mozilla/5.0 (X11; Linux i686; rv:81.0) Gecko/20100101 Firefox/81.0'
 
 # Obey robots.txt rules
 ROBOTSTXT_OBEY = True
@@ -67,9 +67,9 @@ CONCURRENT_REQUESTS = 16
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-    'scraper.pipelines.DatabasePipeline': 300,
+#    'scraper.pipelines.DatabasePipeline': 300,
     'scraper.pipelines.GraphPipeline': 400,
-    'scraper.pipelines.OntologyPipeline': 500,
+#    'scraper.pipelines.OntologyPipeline': 500,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -93,13 +93,13 @@ ITEM_PIPELINES = {
 #HTTPCACHE_IGNORE_HTTP_CODES = []
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
-DATABASE = {
-    'drivername': 'postgres',
-    'host': os.environ['POSTGRES_HOST'],
-    'port': os.environ['POSTGRES_PORT'],
-    'username': os.environ['USER'],
-    'password': os.environ['PASSWORD'],
-    'database': 'daphne'
-}
+# DATABASE = {
+#     'drivername': 'postgres',
+#     'host': os.environ['POSTGRES_HOST'],
+#     'port': os.environ['POSTGRES_PORT'],
+#     'username': os.environ['USER'],
+#     'password': os.environ['PASSWORD'],
+#     'database': 'daphne'
+# }
 
 LOG_LEVEL = 'INFO'
