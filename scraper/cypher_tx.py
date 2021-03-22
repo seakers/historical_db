@@ -69,6 +69,8 @@ def add_sensor(tx, item: Instrument):
                          "CREATE (a)-[r1:IS_HOSTED_BY]->(b) "
                          "CREATE (b)-[r2:HOSTS]->(a) ", id1=item["id"], id2=mission_id).consume()
         print(rel_sum.counters)
+    print('---> ITEM', item)
+    print('---> ITEM ACCURACIES', item['accuracies'])
     for idx, measurement_id in enumerate(item['measurements']):
         rel_sum = tx.run("MATCH (a:Sensor), (b:ObservableProperty) "
                          "WHERE a.id = $id1 AND b.id = $id2 "
