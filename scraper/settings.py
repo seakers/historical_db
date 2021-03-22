@@ -67,7 +67,7 @@ CONCURRENT_REQUESTS = 16
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   'scraper.pipelines.DatabasePipeline': 300,
+    'scraper.pipelines.DatabasePipeline': 300,
     'scraper.pipelines.GraphPipeline': 400,
 #    'scraper.pipelines.OntologyPipeline': 500,
 }
