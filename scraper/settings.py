@@ -94,7 +94,7 @@ ITEM_PIPELINES = {
 #HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 DATABASE = {
-    'drivername': 'postgres',
+    'drivername': 'postgresql+psycopg2',
     'host': os.environ['POSTGRES_HOST'],
     'port': os.environ['POSTGRES_PORT'],
     'username': os.environ['USER'],
