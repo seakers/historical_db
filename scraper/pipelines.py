@@ -359,7 +359,7 @@ class GraphPipeline(object):
         """
         host = os.environ.get("NEO4J_HOST", "localhost")
         port = os.environ.get("NEO4J_PORT", "7687")
-        password = os.environ.get("NEO4J_PASSWORD", 'test')
+        password = os.environ.get("NEO4J_PASSWORD", 'ceosdb')
         uri = f"neo4j://{host}:{port}"
         self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
 

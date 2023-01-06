@@ -188,6 +188,7 @@ class CEOSDBSpider(scrapy.Spider):
     def parse_mission(self, response):
         # Settings for date parsing
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
+        #                         'DATE_ORDER': 'DMY'}
 
         # Basic mission information
         mission_name = response.xpath('//*[@id="lblMissionNameShort"]/text()').extract_first().strip()[2:]
