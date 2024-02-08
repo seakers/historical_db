@@ -95,10 +95,19 @@ class CEOSDBSpider(scrapy.Spider):
         for i in range(1, 230):
             yield scrapy.Request(url='http://database.eohandbook.com/database/agencysummary.aspx?agencyID=' + str(i),
                                  callback=self.parse_agency, priority=20)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx',
-                             callback=self.prepare_missions, priority=15)
-        yield scrapy.Request(url='http://database.eohandbook.com/database/instrumenttable.aspx',
-                             callback=self.prepare_instruments, priority=10)
+        
+        # TODO: the update to the CEOS database website seems to have broken the ddlDisplayResults being set to "All", so the commented-out code below
+        #       only works for the first 10 missions/instruments. I think this is solvable but I tried for several hours with no luck.
+        # yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx',
+        #                      callback=self.prepare_missions, priority=15)
+        # yield scrapy.Request(url='http://database.eohandbook.com/database/missiontable.aspx',
+        #                      callback=self.prepare_instruments, priority=15)
+        for i in range(0,1450):
+            yield scrapy.Request(url='http://database.eohandbook.com/database/missionsummary.aspx?missionID='+str(i),
+                                callback=self.parse_mission, priority=10)
+        for i in range(0,2108):
+            yield scrapy.Request(url='http://database.eohandbook.com/database/instrumentsummary.aspx?instrumentID='+str(i),
+                                callback=self.parse_instrument, priority=10)
 
     def parse(self, response):
         TITLE_SELECTOR = 'title ::text'
@@ -114,7 +123,7 @@ class CEOSDBSpider(scrapy.Spider):
 
     def prepare_broad_categories(self, response):
         broad_cat_links = \
-            response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr[2]/td/table/tr/td[1]/table/tr/td/a[not(img)]/@href')\
+            response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr[2]/td/table/tr/td[1]/table/tr/td/a[not(img)]/@href')\
                 .extract()
         for link in broad_cat_links:
             url = link.strip()
@@ -122,33 +131,33 @@ class CEOSDBSpider(scrapy.Spider):
 
     def parse_broad_category(self, response):
         bc_id = int(response.url.split('=', 1)[-1])
-        name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()')\
+        name = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()')\
             .extract_first().strip()[2:]
-        description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()')\
+        description = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()')\
             .extract_first().strip()
 
         print('Broad category:', bc_id, name, description)
         yield BroadMeasurementCategory(id=bc_id, name=name, description=description)
 
-        categories = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[2]/td/table/tr/td[1]/a/@href') \
+        categories = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[2]/td/table/tr/td[1]/a/@href') \
             .extract()
         for category_link in categories:
             yield scrapy.Request(url=response.urljoin(category_link), callback=self.parse_category, priority=23)
 
     def parse_category(self, response):
         c_id = int(response.url.split('=', 1)[-1])
-        name = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()') \
+        name = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/text()') \
                        .extract()[2].strip()
-        description = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()') \
+        description = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[2]/text()') \
                               .extract_first().strip()
-        broad_category_id = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/a[2]/@href') \
+        broad_category_id = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr/td/table/tr[1]/td[1]/b/a[2]/@href') \
                                     .extract_first().strip().split('=')[-1]
 
         print('Category:', c_id, name, description, broad_category_id)
         yield MeasurementCategory(id=c_id, name=name, description=description,
                                   broad_measurement_category_id=broad_category_id)
 
-        measurement_rows = response.xpath('//*[@id="pnlNominal"]/tr[2]/td/table/tr[1]/td/table/tr[2]/td/table/tr')
+        measurement_rows = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[2]/td/table/tr[1]/td/table/tr[2]/td/table/tr')
         for measurement_row in measurement_rows[1:]:
             m_id = int(measurement_row.xpath('td[1]/a/@href').extract_first().strip().split('=', 1)[-1])
             m_name = measurement_row.xpath('td[1]/a/b/text()').extract_first().strip()
@@ -159,10 +168,10 @@ class CEOSDBSpider(scrapy.Spider):
 
 
     def parse_agency(self, response):
-        agency = response.xpath('//*[@id="lblAgencyNameAbbr"]/text()').extract_first(default='').strip()[2:]
+        agency = response.xpath('//*[@id="MainContent_lblAgencyNameAbbr"]/text()').extract_first(default='').strip()[2:]
         agency_id = int(response.url.split('=', 1)[-1])
-        country = response.xpath('//*[@id="lblAgencyCountry"]/text()').extract_first(default='').strip()
-        website = response.xpath('//*[@id="lblAgencyURL"]/a/@href').extract_first(default='').strip()
+        country = response.xpath('//*[@id="MainContent_lblAgencyCountry"]/text()').extract_first(default='').strip()
+        website = response.xpath('//*[@id="MainContent_lblAgencyURL"]/a/@href').extract_first(default='').strip()
         if agency:
             print('Agency:', agency, agency_id, country, website)
             yield Agency(id=agency_id, name=agency, country=country, website=website)
@@ -173,52 +182,54 @@ class CEOSDBSpider(scrapy.Spider):
         eventvalidation = sel.xpath("//input[@id='__EVENTVALIDATION']/@value").extract().pop()
         data = {'__EVENTTARGET': '', '__EVENTARGUMENT': '', '__LASTFOCUS': '', '__VIEWSTATE': viewstate,
                 '__VIEWSTATEGENERATOR': 'ABD5AB5F', '__VIEWSTATEENCRYPTED': '', '__EVENTVALIDATION': eventvalidation,
-                'ddlAgency': 'All', 'ddlMissionStatus': 'All', 'tbMission': '', 'ddlLauchYearFilterType': 'All',
-                'tbInstruments': '', 'ddlEOLYearFilterType': 'All', 'tbApplications': '', 'ddlDisplayResults': 'All',
-                'ddlRepeatCycleFilter': 'All', 'btFilter': 'Apply+Filter'}
-        yield scrapy.FormRequest('http://database.eohandbook.com/database/missiontable.aspx',
+                'MainContent_ddlAgency': 'All', 'MainContent_ddlMissionStatus': 'All', 'MainContent_tbMission': '', 'MainContent_ddlLauchYearFilterType': 'All',
+                'MainContent_tbInstruments': '', 'MainContent_ddlEOLYearFilterType': 'All', 'MainContent_tbApplications': '', 'MainContent_ddlDisplayResults': 'All',
+                'MainContent_ddlRepeatCycleFilter': 'All', 'MainContent_btFilter': 'Apply+Filter'}
+        yield scrapy.FormRequest.from_response(response,
                                  formdata=data, callback=self.parse_missions)
 
     def parse_missions(self, response):
-        TR_SELECTOR = '//*[@id="gvMissionTable"]/tr'
+        TR_SELECTOR = '//*[@id="MainContent_gvMissionTable"]/tr'
         for row in response.xpath(TR_SELECTOR)[1:]:
             url = row.xpath('td[1]/b/a/@href').extract_first().strip()
             yield scrapy.Request(url=response.urljoin(url), callback=self.parse_mission, priority=14)
 
     def parse_mission(self, response):
+        if "pnlError" in response.text:
+            return
         # Settings for date parsing
         date_parsing_settings = {'RELATIVE_BASE': datetime.datetime(2020, 1, 1)}
 
         # Basic mission information
-        mission_name = response.xpath('//*[@id="lblMissionNameShort"]/text()').extract_first().strip()[2:]
+        mission_name = response.xpath('//*[@id="MainContent_lblMissionNameShort"]/text()').extract_first().strip()[2:]
         mission_id = int(response.url.split('=', 1)[-1])
-        mission_fullname = response.xpath('//*[@id="lblMissionNameFull"]/text()').extract_first(default='').strip()
+        mission_fullname = response.xpath('//*[@id="MainContent_lblMissionNameFull"]/text()').extract_first(default='').strip()
         if not mission_fullname:
             mission_fullname = None
         agency_ids = []
-        for agency_link in response.xpath('//*[@id="lblMissionAgencies"]/a/@href').extract():
+        for agency_link in response.xpath('//*[@id="MainContent_lblMissionAgencies"]/a/@href').extract():
             agency_id = int(agency_link.strip().split('=', 1)[-1])
             if agency_id not in agency_ids:
                 agency_ids.append(agency_id)
-        status = response.xpath('//*[@id="lblMissionStatus"]/text()').extract_first().strip()
-        launch_date = response.xpath('//*[@id="lblLaunchDate"]/text()').extract_first()
+        status = response.xpath('//*[@id="MainContent_lblMissionStatus"]/text()').extract_first().strip()
+        launch_date = response.xpath('//*[@id="MainContent_lblLaunchDate"]/text()').extract_first()
         if launch_date:
             launch_date = dateparser.parse(launch_date.strip(), settings=date_parsing_settings)
-        eol_date = response.xpath('//*[@id="lblEOLDate"]/text()').extract_first()
+        eol_date = response.xpath('//*[@id="MainContent_lblEOLDate"]/text()').extract_first()
         if eol_date:
             eol_date = dateparser.parse(eol_date.strip(), settings=date_parsing_settings)
-        norad_id = response.xpath('//*[@id="lblNoradNumberLink"]/a/text()').extract_first()
+        norad_id = response.xpath('//*[@id="MainContent_lblNoradNumberLink"]/a/text()').extract_first()
         if norad_id is not None:
             norad_id = int(norad_id)
 
-        applications = response.xpath('//*[@id="lblMissionObjectivesAndApplications"]/text()').extract_first(default='').strip()
+        applications = response.xpath('//*[@id="MainContent_lblMissionObjectivesAndApplications"]/text()').extract_first(default='').strip()
 
         # Orbit details (if existing)
-        orbit_type = response.xpath('//*[@id="lblOrbitType"]/text()').extract_first(default='').strip()
-        orbit_period = response.xpath('//*[@id="lblOrbitPeriod"]/text()').extract_first(default='').strip()
-        orbit_sense = response.xpath('//*[@id="lblOrbitSense"]/text()').extract_first(default='').strip()
+        orbit_type = response.xpath('//*[@id="MainContent_lblOrbitType"]/text()').extract_first(default='').strip()
+        orbit_period = response.xpath('//*[@id="MainContent_lblOrbitPeriod"]/text()').extract_first(default='').strip()
+        orbit_sense = response.xpath('//*[@id="MainContent_lblOrbitSense"]/text()').extract_first(default='').strip()
 
-        orbit_inclination = response.xpath('//*[@id="lblOrbitInclination"]/text()').extract_first(default='').strip()
+        orbit_inclination = response.xpath('//*[@id="MainContent_lblOrbitInclination"]/text()').extract_first(default='').strip()
         if orbit_inclination == '':
             orbit_inclination = None
             orbit_inclination_num = None
@@ -236,7 +247,7 @@ class CEOSDBSpider(scrapy.Spider):
             else:
                 orbit_inclination_class = 'Near Polar'
 
-        orbit_altitude = response.xpath('//*[@id="lblOrbitAltitude"]/text()').extract_first(default='').strip()
+        orbit_altitude = response.xpath('//*[@id="MainContent_lblOrbitAltitude"]/text()').extract_first(default='').strip()
         if orbit_altitude == '':
             orbit_altitude = None
             orbit_altitude_num = None
@@ -254,8 +265,8 @@ class CEOSDBSpider(scrapy.Spider):
             else:
                 orbit_altitude_class = 'VH'
 
-        orbit_longitude = response.xpath('//*[@id="lblOrbitLongitude"]/text()').extract_first(default='').strip()
-        orbit_LST = response.xpath('//*[@id="lblOrbitLST"]/text()').extract_first(default='').strip()
+        orbit_longitude = response.xpath('//*[@id="MainContent_lblOrbitLongitude"]/text()').extract_first(default='').strip()
+        orbit_LST = response.xpath('//*[@id="MainContent_lblOrbitLST"]/text()').extract_first(default='').strip()
         if orbit_LST == '':
             orbit_LST = None
             orbit_LST_time = None
@@ -294,7 +305,7 @@ class CEOSDBSpider(scrapy.Spider):
                 orbit_LST_class = None
 
 
-        repeat_cycle = response.xpath('//*[@id="lblRepeatCycle"]/text()').extract_first(default='').strip()
+        repeat_cycle = response.xpath('//*[@id="MainContent_lblRepeatCycle"]/text()').extract_first(default='').strip()
         if repeat_cycle == '':
             repeat_cycle = None
             repeat_cycle_num = None
@@ -332,37 +343,39 @@ class CEOSDBSpider(scrapy.Spider):
         eventvalidation = sel.xpath("//input[@id='__EVENTVALIDATION']/@value").extract().pop()
         data = {'__EVENTTARGET': '', '__EVENTARGUMENT': '', '__LASTFOCUS': '', '__VIEWSTATE': viewstate,
                 '__VIEWSTATEGENERATOR': 'F2417B6C', '__VIEWSTATEENCRYPTED': '', '__EVENTVALIDATION': eventvalidation,
-                'ddlAgency': 'All', 'ddlMissionStatus': 'All', 'tbMission': '', 'ddlInstrumentStatus': 'All',
-                'ddlLauchYearFilterType': 'All', 'tbInstrument': '', 'ddlInstrumentType': 'All', 'tbApplications': '',
-                'ddlInstrumentTechnology': 'All', 'ddlResolutionFilter': 'All', 'ddlWaveband': 'All',
-                'ddlDataAccess': 'All', 'ddlDisplayResults': 'All', 'btFilter': 'Apply+Filter'}
-        yield scrapy.FormRequest('http://database.eohandbook.com/database/instrumenttable.aspx',
-                                 formdata=data, callback=self.parse_instruments)
+                'MainContent_ddlAgency': 'All', 'MainContent_ddlMissionStatus': 'All', 'MainContent_tbMission': '', 'MainContent_ddlInstrumentStatus': 'All',
+                'MainContent_tbInstrument': '', 'MainContent_ddlInstrumentType': 'All', 'MainContent_tbApplications': '',
+                'MainContent_ddlInstrumentTechnology': 'All', 'MainContent_ddlResolutionFilter': 'All', 'MainContent_ddlWaveband': 'All',
+                'MainContent_ddlDataAccess': 'All', 'MainContent_ddlDisplayResults': "3", 'MainContent_btFilter': 'Apply+Filter'}
+        yield scrapy.FormRequest.from_response(response,
+                                 formdata=data, dont_click=True, callback=self.parse_instruments)
 
     def parse_instruments(self, response):
-        TR_SELECTOR = '//table[@id="gvInstrumentTable"]/tr'
+        TR_SELECTOR = '//table[@id="MainContent_gvInstrumentTable"]/tr'
         for row in response.xpath(TR_SELECTOR)[1:]:
             url = row.xpath('td[1]/b/a/@href').extract_first().strip()
             yield scrapy.Request(url=response.urljoin(url), callback=self.parse_instrument, priority=9)
 
     def parse_instrument(self, response):
         # Basic instrument information
-        instrument_name = response.xpath('//*[@id="lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
+        if "pnlError" in response.text:
+            return
+        instrument_name = response.xpath('//*[@id="MainContent_lblInstrumentNameShort"]/text()').extract_first().strip()[2:]
         instrument_id = int(response.url.split('=', 1)[-1])
-        instrument_fullname = response.xpath('//*[@id="lblInstrumentNameFull"]/text()').extract_first(default='')
+        instrument_fullname = response.xpath('//*[@id="MainContent_lblInstrumentNameFull"]/text()').extract_first(default='')
         print('---> INSTRUMENT NAME ', instrument_name)
         print('---> URL ', response.url)
         if not instrument_fullname:
             instrument_fullname = None
-        status = response.xpath('//*[@id="lblInstrumentStatus"]/text()').extract_first().strip()
+        status = response.xpath('//*[@id="MainContent_lblInstrumentStatus"]/text()').extract_first().strip()
         agency_ids = []
-        for agency_link in response.xpath('//*[@id="lblInstrumentAgencies"]/a/@href').extract()[:-1]:
+        for agency_link in response.xpath('//*[@id="MainContent_lblInstrumentAgencies"]/a/@href').extract()[:-1]:
             agency_id = int(agency_link.strip().split('=', 1)[-1])
             if agency_id not in agency_ids:
                 agency_ids.append(agency_id)
-        maturity = response.xpath('//*[@id="lblInstrumentMaturity"]/text()').extract_first(default='').strip()
+        maturity = response.xpath('//*[@id="MainContent_lblInstrumentMaturity"]/text()').extract_first(default='').strip()
         types = []
-        types_texts = response.xpath('//*[@id="lblInstrumentType"]/text()')
+        types_texts = response.xpath('//*[@id="MainContent_lblInstrumentType"]/text()')
         types_text = ''
         for type_subtext in types_texts.extract():
             types_text += ' ' + type_subtext.strip()
@@ -370,31 +383,31 @@ class CEOSDBSpider(scrapy.Spider):
         for type_template in self.instrument_types:
             if type_template in types_text:
                 types.append(type_template)
-        geometry_text = response.xpath('//*[@id="lblInstrumentGeometry"]/text()').extract_first(default='').strip()
+        geometry_text = response.xpath('//*[@id="MainContent_lblInstrumentGeometry"]/text()').extract_first(default='').strip()
         geometries = []
         for geometry_template in self.instrument_geometries:
             if geometry_template in geometry_text:
                 geometries.append(geometry_template)
-        technology = response.xpath('//*[@id="lblInstrumentTechnology"]/text()').extract_first(default='').strip()
+        technology = response.xpath('//*[@id="MainContent_lblInstrumentTechnology"]/text()').extract_first(default='').strip()
         if technology == '':
             technology = None
-        sampling = response.xpath('//*[@id="lblInstrumentSampling"]/text()').extract_first(default='').strip()
+        sampling = response.xpath('//*[@id="MainContent_lblInstrumentSampling"]/text()').extract_first(default='').strip()
         if sampling == '':
             sampling = None
-        data_access = response.xpath('//*[@id="lblDataAccess"]/text()').extract_first(default='').strip()
+        data_access = response.xpath('//*[@id="MainContent_lblDataAccess"]/text()').extract_first(default='').strip()
         if data_access == '':
             data_access = None
-        data_format = response.xpath('//*[@id="lblDataFormat"]/text()').extract_first(default='').strip()
+        data_format = response.xpath('//*[@id="MainContent_lblDataFormat"]/text()').extract_first(default='').strip()
         if data_format == '':
             data_format = None
 
         # Measurements summary
         measurements_and_applications = \
-            response.xpath('//*[@id="lblInstrumentMeasurementsApplications"]/text()').extract_first(default='').strip()
+            response.xpath('//*[@id="MainContent_lblInstrumentMeasurementsApplications"]/text()').extract_first(default='').strip()
 
         # Missions
         missions = []
-        for mission_link in response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[18]/td[2]/table/tr/td/a/@href').extract():
+        for mission_link in response.xpath('//*[@id="MainContent_pnlNominal"]/tr[1]/td/table/tr[18]/td[2]/table/tr/td/a/@href').extract():
             mission_id = int(mission_link.strip().split('=', 1)[-1])
             if mission_id not in missions and mission_id in self.mission_ids:
                 missions.append(mission_id)
@@ -402,52 +415,52 @@ class CEOSDBSpider(scrapy.Spider):
         # Measurements
         measurements = []
         accuracies = []
-        measurement_links = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/@href')
+        measurement_links = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/@href')
         extracted_measurement_links = remove_gcos_links(measurement_links.extract())
         # for link in measurement_links.extract():
         for link in extracted_measurement_links:
             m_id = int(link.strip().split('=', 1)[-1])
             if m_id not in self.measurment_ids:
-                m_name = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/text()')\
+                m_name = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr/td[2]/a/text()')\
                     .extract_first().strip()
                 self.measurment_ids.append(m_id)
                 yield Measurement(id=m_id, name=m_name, description='', measurement_category_id=1000)
             measurements.append(m_id)
             accuracies.append('50km h-code')
 
-        # accuracy_infos = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr[position()>1]/td[3]/text()')
+        # accuracy_infos = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[1]/td/table/tr[16]/td[2]/table/tr[position()>1]/td[3]/text()')
         # print("----- ALL ACCURACY LINKS",  accuracy_infos.extract())
         # for accuracy_info in accuracy_infos.extract():
         #     accuracy = accuracy_info.strip()
         #     accuracies.append(accuracy)
 
         # Summaries
-        resolution_summary = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/text()').extract_first(default='').strip()
+        resolution_summary = response.xpath('//*[@id="MainContent_lblInstrumentResolutionSummary"]/text()').extract_first(default='').strip()
         if resolution_summary == '':
             resolution_summary = None
-        best_resolution = response.xpath('//*[@id="lblInstrumentResolutionSummary"]/i/text()').extract_first(default='').strip()
+        best_resolution = response.xpath('//*[@id="MainContent_lblInstrumentResolutionSummary"]/i/text()').extract_first(default='').strip()
         if best_resolution == '':
             best_resolution = None
         else:
             best_resolution = best_resolution[1:-1].split(':', 1)[-1].strip()
-        swath_summary = response.xpath('//*[@id="lblInstrumentSwathSummary"]/text()').extract_first(default='').strip()
+        swath_summary = response.xpath('//*[@id="MainContent_lblInstrumentSwathSummary"]/text()').extract_first(default='').strip()
         if swath_summary == '':
             swath_summary = None
-        max_swath = response.xpath('//*[@id="lblInstrumentSwathSummary"]/i/text()').extract_first(default='').strip()
+        max_swath = response.xpath('//*[@id="MainContent_lblInstrumentSwathSummary"]/i/text()').extract_first(default='').strip()
         if max_swath == '':
             max_swath = None
         else:
             max_swath = max_swath[1:-1].split(':', 1)[-1].strip()
-        accuracy_summary = response.xpath('//*[@id="lblInstrumentAccuracySummary"]/text()').extract_first(default='').strip()
+        accuracy_summary = response.xpath('//*[@id="MainContent_lblInstrumentAccuracySummary"]/text()').extract_first(default='').strip()
         if accuracy_summary == '':
             accuracy_summary = None
-        waveband_summary = response.xpath('//*[@id="lblInstrumentWavebandSummary"]/text()').extract_first(default='').strip()
+        waveband_summary = response.xpath('//*[@id="MainContent_lblInstrumentWavebandSummary"]/text()').extract_first(default='').strip()
         if waveband_summary == '':
             waveband_summary = None
 
         # Frequencies
         wavebands = []
-        waveband_list = response.xpath('//*[@id="pnlNominal"]/tr[1]/td/table/tr[14]/td[2]/i/table/tr/td/text()').extract()
+        waveband_list = response.xpath('//*[@id="MainContent_pnlNominal"]/tr[1]/td/table/tr[14]/td[2]/i/table/tr/td/text()').extract()
         for waveband in waveband_list:
             w_name = waveband.split('(', 1)[0].strip()
             if w_name != '':
