@@ -357,11 +357,14 @@ class GraphPipeline(object):
         """
         Initializes Bolt connection to Neo4J
         """
-        host = os.environ.get("NEO4J_HOST", "localhost")
-        port = os.environ.get("NEO4J_PORT", "7687")
-        password = os.environ.get("NEO4J_PASSWORD", 'ceosdb_scraper')
-        uri = f"neo4j://{host}:{port}"
-        self.driver = GraphDatabase.driver(uri, auth=("neo4j", password))
+        uri = os.getenv("NEO4J_URI")
+        user = os.getenv("NEO4J_USER")
+        password = os.getenv("NEO4J_PASSWORD")
+        #host = os.environ.get("NEO4J_HOST", "localhost")
+        #port = os.environ.get("NEO4J_PORT", "7687")
+        #password = os.environ.get("NEO4J_PASSWORD", 'ceosdb_scraper')
+        #uri = f"neo4j://{host}:{port}"
+        self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def open_spider(self, spider):
         with self.driver.session() as session:
